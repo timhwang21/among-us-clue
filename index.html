@@ -314,6 +314,8 @@ canvas#stars {
 .pers-badge.hysterical { background: rgba(255,80,80,0.15);   color: #ff6060; }
 .pers-badge.peacemaker { background: rgba(80,200,120,0.15);  color: #50d870; }
 .pers-badge.salty      { background: rgba(160,120,220,0.15); color: #c090f0; }
+.pers-badge.overconfident { background: rgba(255,160,40,0.15); color: #ffa028; }
+.evidence-marker { font-size: 0.85em; margin-left: 5px; }
 
 /* =========== CLUE REVEAL =========== */
 @keyframes clueIn {
@@ -368,12 +370,52 @@ canvas#stars {
   100% { transform: translateY(110vh) rotate(600deg); opacity: 0; }
 }
 
+/* =========== CHANGELOG =========== */
+.changelog-btn {
+  position: absolute; top: 12px; right: 12px;
+  font-family: 'Nunito', sans-serif; font-size: 0.75em; font-weight: 700;
+  padding: 6px 12px; border-radius: 20px; cursor: pointer;
+  background: rgba(255,255,255,0.06); color: #8888aa;
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: background 0.2s;
+  z-index: 10;
+}
+.changelog-btn:hover { background: rgba(255,255,255,0.12); color: #aaaacc; }
+
+.changelog-dialog {
+  background: #13132e; color: #ccc; border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px; padding: 0; max-width: 500px; width: 90vw;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+}
+.changelog-dialog::backdrop { background: rgba(0,0,0,0.6); }
+.changelog-dialog-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.changelog-dialog-header h2 {
+  font-family: 'Orbitron', sans-serif; font-size: 0.85em; letter-spacing: 3px; color: #88ccff; margin: 0;
+}
+.changelog-dialog-close {
+  background: none; border: none; color: #666; cursor: pointer; font-size: 1.3em; line-height: 1; padding: 2px 6px;
+}
+.changelog-dialog-close:hover { color: #aaa; }
+.changelog-dialog-body { padding: 16px 20px 20px; max-height: 60vh; overflow-y: auto; }
+.changelog-entry { margin-bottom: 18px; }
+.changelog-date {
+  font-family: 'Orbitron', sans-serif; font-size: 0.72em; letter-spacing: 2px;
+  color: #88ccff; margin-bottom: 8px;
+}
+.changelog-entry ul { list-style: none; padding: 0; margin: 0; }
+.changelog-entry li { font-size: 0.88em; line-height: 1.6; color: #aab; padding: 3px 0; padding-left: 14px; position: relative; }
+.changelog-entry li::before { content: '–'; position: absolute; left: 0; color: #555; }
+
 /* =========== RESPONSIVE =========== */
 @media (max-width: 720px) {
   .game-grid { grid-template-columns: 1fr; }
   .clues-panel-col { grid-column: 1; grid-row: auto; }
   .acc-actions { grid-column: 1; }
-  .clues-panel { max-height: 280px; position: static; }
+  .clues-panel { max-height: 60vh; position: static; }
+  #result-log { max-height: 70vh; overflow-y: auto; }
 }
 </style>
 </head>
@@ -386,6 +428,7 @@ canvas#stars {
      ============================================================ -->
 <div id="title-screen" class="screen active">
   <div id="title-crew-container"></div>
+  <button class="changelog-btn" onclick="document.getElementById('changelog-dialog').showModal()">📋 Changelog</button>
   <div id="title-content">
     <div class="title-logo">
       <div class="title-red">AMONG US</div>
@@ -403,7 +446,7 @@ canvas#stars {
 
     <div class="how-to-play">
       <strong>How to Play:</strong>
-      🔍 Press <strong>Reveal Evidence</strong> to uncover clues one by one<br>
+      💬 Press <strong>Discuss</strong> to uncover testimony one by one<br>
       🚩 Click a name to mark it as <em>suspicious</em> or <em>safe</em><br>
       🎯 Make your accusation when you know the answer!<br>
       🆘 Once all evidence is revealed, extra hints are available — but risky...<br>
@@ -446,7 +489,7 @@ canvas#stars {
         <div class="clues-scroll">
           <div id="clues-list"></div>
           <div id="extra-hints-section" style="display:none">
-            <div class="clues-divider">🆘 EXTRA HINTS</div>
+            <div class="clues-divider">🔍 INVESTIGATION</div>
             <div id="extra-hints-list"></div>
           </div>
         </div>
@@ -476,7 +519,7 @@ canvas#stars {
     <!-- Row 3: action bar spans first 3 columns -->
     <div class="acc-actions">
       <button class="btn btn-primary" onclick="submitAccusation()">🚨 Accuse!</button>
-      <button class="btn btn-hint" id="hint-btn" onclick="getExtraHint()">🆘 Get Hint (but 10% chance impostor strikes!)</button>
+      <button class="btn btn-hint" id="hint-btn" onclick="getExtraHint()">💬 Discuss</button>
       <div class="kill-risk-display" id="kill-display"></div>
       <div class="acc-warning" id="acc-kill-warning"></div>
     </div>
@@ -500,11 +543,30 @@ canvas#stars {
     <div class="result-log-header">EVIDENCE LOG</div>
     <div id="result-log-clues"></div>
     <div id="result-log-hints" class="result-log-section" style="display:none">
-      <div class="result-log-section-label">Extra Hints</div>
+      <div class="result-log-section-label">Investigations</div>
       <div id="result-log-hints-list"></div>
     </div>
   </div>
 </div>
+
+<dialog id="changelog-dialog" class="changelog-dialog">
+  <div class="changelog-dialog-header">
+    <h2>📋 CHANGELOG</h2>
+    <button class="changelog-dialog-close" onclick="document.getElementById('changelog-dialog').close()">✕</button>
+  </div>
+  <div class="changelog-dialog-body">
+    <div class="changelog-entry">
+      <div class="changelog-date">2026-06-14</div>
+      <ul>
+        <li>New crewmate art matching the Among Us visual style: unified head/body shape, larger visor, no separate head sphere.</li>
+        <li>Added 5 new trust structure strategies (fork, lone-wolf, Y-converging, two-chains, negation-testimony) for more varied gameplay.</li>
+        <li>Added crew personalities (silly, hysterical, peacemaker, salty, overconfident) that flavor each crewmate's testimony.</li>
+        <li>Extra hint system reworked: hints are now player investigations (journal entries, admin logs, security footage) instead of more crew testimony.</li>
+        <li>Evidence log now shows 🔍 on real clues and personality tags on flavor speech.</li>
+      </ul>
+    </div>
+  </div>
+</dialog>
 
 <script type="module">
 import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, KILL_RISKS } from './src/data.js';
@@ -636,7 +698,8 @@ function getExtraHint() {
   if (clueRevealIdx < clues.length) {
     clueRevealIdx++;
     renderClues();
-    document.querySelector('.clues-scroll')?.scrollTo({ top: Infinity });
+    const scrollEl1 = document.querySelector('.clues-scroll');
+    if (scrollEl1) scrollEl1.scrollTop = scrollEl1.scrollHeight;
     updateHintButton();
     return;
   }
@@ -668,13 +731,14 @@ function getExtraHint() {
             + `<span class="clue-crew-icon${angryClass}">${crewSVG(hint.speaker.color, hint.speaker.dark, 18)}</span>`
             + `${label}</span>`;
         })()
-      : '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
+      : '<span class="extra-hint-label">🔍 INVESTIGATION</span>';
     item.innerHTML = `<span class="clue-num">${extraHintIdx}</span>`
       + `<div class="clue-body">${speakerHTML}`
       + `<span class="clue-speech">${hint.text}</span>`
       + '</div>';
     list.appendChild(item);
-    item.closest('.clues-scroll')?.scrollTo({ top: Infinity });
+    const scrollEl = document.querySelector('.clues-scroll');
+    if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
   }
 
   updateHintButton();
@@ -688,14 +752,14 @@ function updateHintButton() {
   if (clueRevealIdx < clues.length) {
     const remaining = clues.length - clueRevealIdx;
     btn.disabled    = false;
-    btn.textContent = `🔍 Reveal Evidence (${remaining} left)`;
+    btn.textContent = `💬 Discuss (${remaining} left)`;
   } else if (killRisk >= 100) {
     btn.disabled    = true;
     btn.textContent = '💀 Impostor will definitely strike (100%)';
   } else {
     const nextRisk = KILL_RISKS[Math.min(extraHintIdx + 1, KILL_RISKS.length - 1)];
     btn.disabled    = false;
-    btn.textContent = `🆘 Get Hint (but ${nextRisk}% chance impostor strikes!)`;
+    btn.textContent = `🔍 Find evidence (but ${nextRisk}% chance impostor strikes!)`;
   }
 
   display.textContent = '';
@@ -947,10 +1011,15 @@ function showResult(correct) {
   }
 }
 
-function speakerHTML(c, { angry = false, dead = false } = {}) {
-  const label      = dead ? `👻 ${c.name}` : c.name;
-  const ptype      = personalities[c.name];
-  const badge      = ptype ? `<span class="pers-badge ${ptype}">${ptype}</span>` : '';
+function speakerHTML(c, { angry = false, dead = false, deductive = null } = {}) {
+  const label = dead ? `👻 ${c.name}` : c.name;
+  let badge = '';
+  if (deductive === true) {
+    badge = '<span class="evidence-marker">🔍</span>';
+  } else {
+    const ptype = personalities[c.name];
+    badge = ptype ? `<span class="pers-badge ${ptype}">${ptype}</span>` : '';
+  }
   return `<span class="clue-speaker" style="color:${c.color}">`
     + `<span class="clue-crew-icon${angry ? ' angry' : ''}">${crewSVG(c.color, c.dark, 18)}</span>`
     + `${label}${badge}</span>`;
@@ -963,7 +1032,7 @@ function populateResultLog() {
     const deadClass = c.dead ? ' clue-dead' : '';
     return `<div class="clue-item${deadClass} ${MARK_STATES[m]}">`
       + `<span class="clue-num">${i + 1}</span>`
-      + `<div class="clue-body">${speakerHTML(c.speaker, { angry: !!c.accusation, dead: !!c.dead })}`
+      + `<div class="clue-body">${speakerHTML(c.speaker, { angry: !!c.accusation, dead: !!c.dead, deductive: c.deductive ?? null })}`
       + `<span class="clue-speech">${c.text}</span></div></div>`;
   }).join('');
 
@@ -974,7 +1043,7 @@ function populateResultLog() {
     const unrevClass = revealed ? '' : ' hint-unrevealed';
     const speaker    = hint.speaker
       ? speakerHTML(hint.speaker, { angry: !!hint.accusation, dead: !!hint.dead })
-      : '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
+      : '<span class="extra-hint-label">🔍 INVESTIGATION</span>';
     return `<div class="clue-item extra-hint-item${deadClass}${unrevClass}">`
       + `<span class="clue-num">${i + 1}${revealed ? '' : '<span class="hint-unrevealed-label"> 🔒</span>'}</span>`
       + `<div class="clue-body">${speaker}<span class="clue-speech">${hint.text}</span></div></div>`;

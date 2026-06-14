@@ -36,6 +36,20 @@ test/
   e2e/game.spec.js  — Playwright end-to-end tests
 ```
 
+## Personalities
+
+Each crewmate is randomly assigned one of five personality types that flavors their non-deductive testimony. Personalities are purely cosmetic — they don't affect deduction.
+
+| Personality | Style |
+|-------------|-------|
+| **Silly** | Off-topic and chaotic. Says something completely unrelated to the investigation. |
+| **Hysterical** | Panicked. Baselessly accuses other crewmates without any evidence. |
+| **Peacemaker** | Calming. Tries to de-escalate; offers nothing useful to the investigation. |
+| **Salty** | Bitter. Makes passive-aggressive remarks about the investigation. |
+| **Overconfident** | Smug. Confidently claims to have solved it — without sharing anything actionable. Distinct from hysterical: doesn't accuse anyone specifically, just makes self-satisfied assertions. |
+
+Each personality type appears at most twice per game. Some crewmates may have no personality. In the game-over evidence log, personality tags appear next to flavor speech; real evidence clues are marked with 🔍 instead.
+
 ---
 
 ## Design Philosophy

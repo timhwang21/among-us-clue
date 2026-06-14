@@ -38,24 +38,24 @@ test('game screen has correct structure', async ({ page }) => {
   await expect(suspectOptions).toHaveCount(5);
 });
 
-test('Reveal Evidence button reveals clues one at a time', async ({ page }) => {
+test('Discuss button reveals clues one at a time', async ({ page }) => {
   await page.getByRole('button', { name: /Start Investigation/ }).click();
 
   // Initially no clues shown
   await expect(page.locator('#clues-list .clue-item')).toHaveCount(0);
 
   // First reveal
-  await page.getByRole('button', { name: /Reveal Evidence/ }).click();
+  await page.getByRole('button', { name: /Discuss/ }).click();
   await expect(page.locator('#clues-list .clue-item')).toHaveCount(1);
 
   // Second reveal
-  await page.getByRole('button', { name: /Reveal Evidence/ }).click();
+  await page.getByRole('button', { name: /Discuss/ }).click();
   await expect(page.locator('#clues-list .clue-item')).toHaveCount(2);
 });
 
 test('clue items are clickable for marking', async ({ page }) => {
   await page.getByRole('button', { name: /Start Investigation/ }).click();
-  await page.getByRole('button', { name: /Reveal Evidence/ }).click();
+  await page.getByRole('button', { name: /Discuss/ }).click();
 
   const clue = page.locator('#clues-list .clue-item').first();
 
@@ -76,12 +76,12 @@ test('extra hints appear after all evidence revealed', async ({ page }) => {
   await page.getByRole('button', { name: /Start Investigation/ }).click();
 
   // Reveal all standard clues
-  while (await page.getByRole('button', { name: /Reveal Evidence/ }).isVisible()) {
-    await page.getByRole('button', { name: /Reveal Evidence/ }).click();
+  while (await page.getByRole('button', { name: /Discuss/ }).isVisible()) {
+    await page.getByRole('button', { name: /Discuss/ }).click();
   }
 
-  // Button should now be in hint mode
-  await expect(page.getByRole('button', { name: /Get Hint/ })).toBeVisible();
+  // Button should now be in investigation mode
+  await expect(page.getByRole('button', { name: /Find evidence/ })).toBeVisible();
 });
 
 test('wrong accusation shows loss screen with shake', async ({ page }) => {

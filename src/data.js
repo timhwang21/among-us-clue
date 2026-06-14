@@ -100,6 +100,18 @@ export const PERSONALITY_LINES = {
     '"Every meeting. Every single meeting. We go in circles."',
     '"If I have to explain the trust chain one more time I am going to lose my mind."',
   ],
+  overconfident: [
+    '"I\'ve basically already figured it out. It\'s obvious when you know what to look for."',
+    '"I\'ve solved things like this before. This one\'s not even subtle."',
+    '"Statistically speaking, I\'ve narrowed it down significantly. I won\'t say more until I\'m ready."',
+    '"I have a theory but I\'m keeping it close. Don\'t want to spook anyone."',
+    '"Some of you are looking at this all wrong. I figured it out a while ago."',
+    '"I\'ve been tracking behavioral patterns since this started. The data is pointing somewhere very clear."',
+    '"My analysis is basically complete. Just confirming one last thing."',
+    '"I noticed something the rest of you clearly missed. That\'s all I\'ll say for now."',
+    '"Trust me, I know who it is. I just need the room and the weapon and I\'m done."',
+    '"I\'ve already solved it in my head. I\'m just waiting for everyone else to catch up."',
+  ],
 };
 
 export const ROOMS = [
@@ -249,6 +261,40 @@ export const TMPL = {
     (k, r) => `"${k} was heading into ${r} earlier. Alone. I thought that was a little odd."`,
     (k, r) => `"I passed ${k} outside ${r} not long before the alarm. They seemed like they were trying not to be seen."`,
     (k, r) => `"${k} slipped out of ${r} right around when the incident must have happened."`,
+  ],
+};
+
+export const INVESTIGATION = {
+  weaponElim: [
+    (name, emoji) => `Checked the equipment manifest: ${emoji} ${name} was accounted for and undisturbed. Not the murder weapon.`,
+    (name, emoji) => `Inventory scan complete — ${emoji} ${name} is still in storage. Rule it out.`,
+    (name, emoji) => `Recovered ${emoji} ${name} from its normal location, clean and unused.`,
+  ],
+  bodyLocation: [
+    room => `Admin logs confirmed: the body was recovered in ${room}.`,
+    room => `Checked the emergency meeting records — the alert was triggered from ${room}.`,
+    room => `Security terminal confirmed: incident occurred in ${room}.`,
+    room => `Door sensor logs place the incident in ${room}.`,
+  ],
+  suspectBehavior: [
+    name => `Security footage flagged ${name} for unusual movement near the crime scene around the time of death.`,
+    name => `Task completion logs show ${name} was unaccounted for during the estimated window.`,
+    name => `Internal comms review: multiple crew independently flagged ${name} as behaving erratically that shift.`,
+    name => `Admin map data places ${name} near the murder scene at the time of death.`,
+  ],
+  alibiContradiction: [
+    (name, room) => `Pulled admin logs: ${room} was empty during the window ${name} claimed to be there.`,
+    (name, room) => `Door sensors show ${room} was unoccupied at that time — ${name}'s alibi doesn't check out.`,
+    (name, room) => `Access logs checked: no entries for ${room} match ${name}'s claimed timeframe.`,
+    (name, room) => `Admin records confirm ${name} was not in ${room} when they claimed. Their alibi is false.`,
+  ],
+  victimJournalRoom: [
+    (victimName, room) => `Found ${victimName}'s journal. Last entry: "Something felt wrong near ${room}. I should investigate."`,
+    (victimName, room) => `Recovered ${victimName}'s personal log. Final message: "Something off about ${room}. Going to check."`,
+  ],
+  victimJournalWeapon: [
+    (victimName, weapon) => `Found ${victimName}'s last voicemail. They mentioned a ${weapon} going missing earlier that day.`,
+    (victimName, weapon) => `Recovered ${victimName}'s notes. Final entry: a ${weapon} was "in the wrong place."`,
   ],
 };
 

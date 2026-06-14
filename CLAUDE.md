@@ -62,3 +62,9 @@ State lives in `index.html` globals: `answer`, `clues`, `clueMarks`, `clueReveal
 ### Screens
 
 Three screens toggled by `showScreen(name)`: `title`, `game`, `result`. The title animation (`startTitleAnimation`) runs a continuous `requestAnimationFrame` loop — it's stopped when leaving the title screen.
+
+## Changelog
+
+Maintain `CHANGELOG.md` at the repo root. Update it whenever you implement player-facing features (new gameplay mechanics, UX improvements, visual changes, new content). Do not add entries for refactors, test changes, internal architecture changes, or anything not visible to players.
+
+Format: newest entry at the top, date header `## YYYY-MM-DD`, brief bullet points describing what the player experiences.

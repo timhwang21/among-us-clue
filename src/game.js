@@ -1,4 +1,4 @@
-import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, TMPL, GUARDIAN_ANGEL_LINES, GUARDIAN_ANGEL_EVIDENCE, WEAPON_ELIM, PERSONALITY_LINES } from './data.js';
+import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, TMPL, INVESTIGATION } from './data.js';
 import { rand, shuffle } from './utils.js';
 import { vouch, witness, negation, roomCorr, weaponHint } from './facts.js';
 import { pickStrategy } from './strategies/index.js';
@@ -6,7 +6,7 @@ import { factToClue, buildNoise } from './render.js';
 import { verify } from './solver.js';
 
 const MAX_TRIES = 50;
-const PERSONALITY_TYPES = ['silly', 'hysterical', 'peacemaker', 'salty'];
+const PERSONALITY_TYPES = ['silly', 'hysterical', 'peacemaker', 'salty', 'overconfident'];
 
 // Assign one personality per crewmate. Each type may appear 0, 1, or 2 times;
 // any crewmates beyond the assigned pool get null (no personality flavor).
@@ -62,8 +62,8 @@ export function buildClues(answer, victim, personalities) {
 
     // Killer's false alibi clue (decorative, not deductive).
     const decorative = [
-      { speaker: answer.suspect, text: rand(TMPL.killerLie)(killerFakeRoom.name) },
-      { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(rand(innocents).name), accusation: true },
+      { speaker: answer.suspect, text: rand(TMPL.killerLie)(killerFakeRoom.name), deductive: false },
+      { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(rand(innocents).name), accusation: true, deductive: false },
     ];
 
     const noiseClues = buildNoise({
@@ -85,32 +85,26 @@ export function buildClues(answer, victim, personalities) {
 }
 
 export function buildExtraHints(answer, trustChain, victim) {
-  const { innocents, killerFakeRoom } = trustChain;
-  const [A, B, C, D] = innocents;
+  const { killerFakeRoom } = trustChain;
   const nonWeapons = WEAPONS.filter(w => w.name !== answer.weapon.name);
-  const hints      = [];
+  const hints = [];
 
   if (nonWeapons.length) {
     const sw = rand(nonWeapons);
-    hints.push({ speaker: null, text: rand(WEAPON_ELIM)(sw.name, sw.emoji) });
+    hints.push({ speaker: null, text: rand(INVESTIGATION.weaponElim)(sw.name, sw.emoji) });
   }
 
-  hints.push({ speaker: C, text: rand(TMPL.roomHint)(answer.room.name) });
-  hints.push({ speaker: D, text: rand(TMPL.rhBehavior)(answer.suspect.name) });
-  hints.push({
-    speaker: B,
-    text: rand(TMPL.killerContradict)(answer.suspect.name, killerFakeRoom.name),
-    accusation: true,
-  });
-  hints.push({ speaker: A, text: rand(TMPL.rhBehavior)(answer.suspect.name) });
+  hints.push({ speaker: null, text: rand(INVESTIGATION.bodyLocation)(answer.room.name) });
+  hints.push({ speaker: null, text: rand(INVESTIGATION.suspectBehavior)(answer.suspect.name) });
+  hints.push({ speaker: null, text: rand(INVESTIGATION.alibiContradiction)(answer.suspect.name, killerFakeRoom.name) });
+  hints.push({ speaker: null, text: rand(INVESTIGATION.suspectBehavior)(answer.suspect.name) });
 
   const revealRoom = Math.random() < 0.5;
   hints.push({
-    speaker: victim,
+    speaker: null,
     text: revealRoom
-      ? rand(GUARDIAN_ANGEL_EVIDENCE.room)(answer.room.name)
-      : rand(GUARDIAN_ANGEL_EVIDENCE.weapon)(answer.weapon.name),
-    dead: true,
+      ? rand(INVESTIGATION.victimJournalRoom)(victim.name, answer.room.name)
+      : rand(INVESTIGATION.victimJournalWeapon)(victim.name, answer.weapon.name),
   });
 
   return hints;

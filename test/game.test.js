@@ -135,9 +135,9 @@ describe('createGame', () => {
     }
   });
 
-  it('extraHints[3] (4th) has accusation: true', () => {
+  it('extraHints[3] (4th) has no accusation flag', () => {
     const { extraHints } = createGame();
-    expect(extraHints[3].accusation).toBe(true);
+    expect(extraHints[3].accusation).toBeFalsy();
   });
 
   it('extraHints[0] (weapon elimination) does NOT mention the murder weapon name', () => {
@@ -150,11 +150,11 @@ describe('createGame', () => {
     expect(extraHints[1].text).toContain(answer.room.name);
   });
 
-  it('extraHints[3] (direct accusation) mentions killer name and killerFakeRoom', () => {
+  it('extraHints[3] (alibi contradiction) mentions killer name and killerFakeRoom', () => {
     const { answer, trustChain, extraHints } = createGame();
     expect(extraHints[3].text).toContain(answer.suspect.name);
     expect(extraHints[3].text).toContain(trustChain.killerFakeRoom.name);
-    expect(extraHints[3].speaker.name).toBe(trustChain.innocents[1].name);
+    expect(extraHints[3].speaker).toBeNull();
   });
 
   it('extraHints[2] and [4] (behavioral) name the killer and have no accusation flag', () => {
@@ -165,11 +165,13 @@ describe('createGame', () => {
     expect(extraHints[4].accusation).toBeFalsy();
   });
 
-  it('last extraHint is guardian angel from victim with dead: true', () => {
-    const { victim, extraHints } = createGame();
+  it('last extraHint is a journal investigation with speaker: null', () => {
+    const { answer, extraHints } = createGame();
     const last = extraHints[extraHints.length - 1];
-    expect(last.dead).toBe(true);
-    expect(last.speaker.name).toBe(victim.name);
+    expect(last.speaker).toBeNull();
+    const mentionsRoom = last.text.includes(answer.room.name);
+    const mentionsWeapon = last.text.includes(answer.weapon.name);
+    expect(mentionsRoom || mentionsWeapon).toBe(true);
   });
 
   it('guardian angel extra hint mentions the murder room or murder weapon', () => {

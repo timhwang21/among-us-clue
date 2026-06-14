@@ -7,33 +7,33 @@ export function factToClue(fact, answer) {
   switch (fact.type) {
     case TYPE.VOUCH:
       return [
-        { speaker: fact.to,   text: rand(TMPL.alibi)(fact.room.name) },
-        { speaker: fact.from, text: rand(TMPL.backing)(fact.to.name, fact.room.name) },
+        { speaker: fact.to,   text: rand(TMPL.alibi)(fact.room.name), deductive: true },
+        { speaker: fact.from, text: rand(TMPL.backing)(fact.to.name, fact.room.name), deductive: true },
       ];
 
     case TYPE.KILLER_LIE:
       return [
-        { speaker: answer.suspect, text: rand(TMPL.killerLie)(fact.room.name) },
-        { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(rand(fact._innocents).name), accusation: true },
+        { speaker: answer.suspect, text: rand(TMPL.killerLie)(fact.room.name), deductive: true },
+        { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(rand(fact._innocents).name), accusation: true, deductive: true },
       ];
 
     case TYPE.WITNESS:
       // kind='suspect' directly names the killer (lone-wolf strategy only).
       if (fact.kind === 'suspect')
-        return [{ speaker: fact.speaker, text: rand(TMPL.witnessWeapon)(answer.suspect.name, answer.weapon.name) }];
+        return [{ speaker: fact.speaker, text: rand(TMPL.witnessWeapon)(answer.suspect.name, answer.weapon.name), deductive: true }];
       if (fact.kind === 'weapon')
-        return [{ speaker: fact.speaker, text: rand(TMPL.witnessWeapon)(answer.suspect.name, answer.weapon.name) }];
-      return [{ speaker: fact.speaker, text: rand(TMPL.witnessRoom)(answer.suspect.name, answer.room.name) }];
+        return [{ speaker: fact.speaker, text: rand(TMPL.witnessWeapon)(answer.suspect.name, answer.weapon.name), deductive: true }];
+      return [{ speaker: fact.speaker, text: rand(TMPL.witnessRoom)(answer.suspect.name, answer.room.name), deductive: true }];
 
     case TYPE.NEGATION:
       // An innocent contradicts the killer's fake alibi: "I was in [fakeRoom] — [killer] wasn't there."
-      return [{ speaker: fact.speaker, text: rand(TMPL.killerContradict)(answer.suspect.name, fact.fakeRoom.name), accusation: true }];
+      return [{ speaker: fact.speaker, text: rand(TMPL.killerContradict)(answer.suspect.name, fact.fakeRoom.name), accusation: true, deductive: true }];
 
     case TYPE.ROOM_CORR:
-      return [{ speaker: fact.speaker, text: rand(TMPL.roomCorr)(answer.room.name) }];
+      return [{ speaker: fact.speaker, text: rand(TMPL.roomCorr)(answer.room.name), deductive: true }];
 
     case TYPE.WEAPON_HINT:
-      return [{ speaker: fact.speaker, text: rand(TMPL.weaponHint)(answer.weapon.name) }];
+      return [{ speaker: fact.speaker, text: rand(TMPL.weaponHint)(answer.weapon.name), deductive: true }];
 
     case TYPE.WEAPON_ELIM:
       // weaponElim is only used as an extra hint; not rendered inline.
@@ -54,27 +54,27 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
   // Red-herring weapon/room corroboration clues pointing to wrong answers.
   const rhRooms = shuffle(nonMurderRooms.slice());
   if (nonMurderWeapons.length && rhRooms.length)
-    rh.push({ speaker: sp0, text: rand(TMPL.weaponCorr)(rand(nonMurderWeapons).name, rhRooms[0].name) });
+    rh.push({ speaker: sp0, text: rand(TMPL.weaponCorr)(rand(nonMurderWeapons).name, rhRooms[0].name), deductive: false });
   if (nonMurderWeapons.length > 1)
-    rh.push({ speaker: sp1, text: rand(TMPL.rhWeapon)(sp2.name, nonMurderWeapons[1].name) });
+    rh.push({ speaker: sp1, text: rand(TMPL.rhWeapon)(sp2.name, nonMurderWeapons[1].name), deductive: false });
   if (rhRooms.length > 1)
-    rh.push({ speaker: sp3, text: rand(TMPL.rhRoom)(sp0.name, rhRooms[1].name) });
+    rh.push({ speaker: sp3, text: rand(TMPL.rhRoom)(sp0.name, rhRooms[1].name), deductive: false });
 
   // Fake weapon-missing clue: one innocent reports a non-murder weapon missing, creating
   // uncertainty about which missing-weapon claim is the real evidence.
   if (nonMurderWeapons.length) {
     const rhWeapon = rand(nonMurderWeapons);
-    rh.push({ speaker: rand(innocents), text: rand(TMPL.weaponHint)(rhWeapon.name) });
+    rh.push({ speaker: rand(innocents), text: rand(TMPL.weaponHint)(rhWeapon.name), deductive: false });
   }
 
   // Silly flavor lines — silly-personality suspects get 2 lines, others get 1.
   const sillyPool = shuffle([...innocents, answer.suspect]);
   const sillyCount = personalities[sillyPool[0].name] === 'silly' ? 2 : 1;
-  for (let i = 0; i < sillyCount; i++) rh.push({ speaker: sillyPool[0], text: rand(SILLY_LINES) });
-  if (sillyCount < 2) rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES) });
+  for (let i = 0; i < sillyCount; i++) rh.push({ speaker: sillyPool[0], text: rand(SILLY_LINES), deductive: false });
+  if (sillyCount < 2) rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES), deductive: false });
 
   // Ghost/guardian angel flavor clue from victim.
-  rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true });
+  rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true, deductive: false });
 
   // Hysterical accusations — accuser must not have personally vouched for their target.
   const accuserBacked = (accuser, target) =>
@@ -82,8 +82,8 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
   let accusers;
   do { accusers = shuffle(innocents.slice()); }
   while (accuserBacked(accusers[0], accusers[1]) || accuserBacked(accusers[2], accusers[3]));
-  rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true });
-  rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true });
+  rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true, deductive: false });
+  rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true, deductive: false });
 
   // Personality flavor: one extra line per personality-typed suspect.
   const allCrewmates = [...innocents, answer.suspect];
@@ -91,14 +91,16 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
     const ptype = personalities[crewmate.name];
     if (!ptype) continue;
     if (ptype === 'silly') {
-      rh.push({ speaker: crewmate, text: rand(SILLY_LINES) });
+      rh.push({ speaker: crewmate, text: rand(SILLY_LINES), deductive: false });
     } else if (ptype === 'hysterical') {
       const targets = allCrewmates.filter(c => c.name !== crewmate.name);
-      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.hysterical)(rand(targets).name), accusation: true });
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.hysterical)(rand(targets).name), accusation: true, deductive: false });
     } else if (ptype === 'peacemaker') {
-      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.peacemaker) });
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.peacemaker), deductive: false });
     } else if (ptype === 'salty') {
-      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.salty) });
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.salty), deductive: false });
+    } else if (ptype === 'overconfident') {
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.overconfident), deductive: false });
     }
   }
 
@@ -108,8 +110,8 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
 // Build the real weapon/room corroboration that IS part of the deductive core.
 export function buildCoreCorroboration({ answer, speaker1, speaker2, speaker3 }) {
   return [
-    { speaker: speaker1, text: rand(TMPL.roomCorr)(answer.room.name) },
-    { speaker: speaker2, text: rand(TMPL.weaponHint)(answer.weapon.name) },
-    { speaker: speaker3, text: rand(TMPL.weaponCorr)(answer.weapon.name, answer.room.name) },
+    { speaker: speaker1, text: rand(TMPL.roomCorr)(answer.room.name), deductive: true },
+    { speaker: speaker2, text: rand(TMPL.weaponHint)(answer.weapon.name), deductive: true },
+    { speaker: speaker3, text: rand(TMPL.weaponCorr)(answer.weapon.name, answer.room.name), deductive: true },
   ];
 }
