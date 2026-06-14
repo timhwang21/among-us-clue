@@ -524,34 +524,33 @@ import { createGame } from './src/game.js';
 // ================================================================
 //  GAME STATE
 // ================================================================
-var answer         = {};
-var clues          = [];
-var clueMarks      = []; // per-clue mark state (0=none, 1=suspicious, 2=safe)
-var clueRevealIdx  = 0;
-var extraHints     = [];
-var extraHintIdx   = 0;
-var killRisk       = 0;
-var marks          = { suspects: {}, rooms: {}, weapons: {} };
-var victim         = null;
-var silly          = [];
-var personalities  = {};
-var connections    = [];
-var _drag          = { active: false, fromEl: null, fromType: '', fromName: '', curX: 0, curY: 0 };
+let answer        = {};
+let clues         = [];
+let clueMarks     = []; // per-clue mark state (0=none, 1=suspicious, 2=safe)
+let clueRevealIdx = 0;
+let extraHints    = [];
+let extraHintIdx  = 0;
+let killRisk      = 0;
+let marks         = { suspects: {}, rooms: {}, weapons: {} };
+let victim        = null;
+let silly         = [];
+let personalities = {};
+let connections   = [];
+const _drag       = { active: false, fromEl: null, fromType: '', fromName: '', curX: 0, curY: 0 };
 
 // ================================================================
 //  SVG HELPERS
 // ================================================================
-function crewSVG(color, dark, w) {
-  w = w || 50;
-  var h = Math.round(w * 1.3);
-  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="16" y="50" width="53" height="58" rx="15" fill="' + color + '"/>'
-    + '<ellipse cx="43" cy="37" rx="30" ry="27" fill="' + color + '"/>'
-    + '<rect x="20" y="17" width="45" height="28" rx="10" fill="#aaddff" opacity="0.88"/>'
-    + '<ellipse cx="30" cy="27" rx="8" ry="5" fill="white" opacity="0.5"/>'
-    + '<rect x="68" y="54" width="15" height="28" rx="6" fill="' + dark + '"/>'
-    + '<rect x="19" y="102" width="19" height="20" rx="7" fill="' + dark + '"/>'
-    + '<rect x="45" y="102" width="19" height="20" rx="7" fill="' + dark + '"/>'
+function crewSVG(color, dark, w = 50) {
+  const h = Math.round(w * 1.3);
+  return `<svg width="${w}" height="${h}" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">`
+    + `<rect x="16" y="50" width="53" height="58" rx="15" fill="${color}"/>`
+    + `<ellipse cx="43" cy="37" rx="30" ry="27" fill="${color}"/>`
+    + `<rect x="20" y="17" width="45" height="28" rx="10" fill="#aaddff" opacity="0.88"/>`
+    + `<ellipse cx="30" cy="27" rx="8" ry="5" fill="white" opacity="0.5"/>`
+    + `<rect x="68" y="54" width="15" height="28" rx="6" fill="${dark}"/>`
+    + `<rect x="19" y="102" width="19" height="20" rx="7" fill="${dark}"/>`
+    + `<rect x="45" y="102" width="19" height="20" rx="7" fill="${dark}"/>`
     + '</svg>';
 }
 
@@ -559,8 +558,8 @@ function crewSVG(color, dark, w) {
 //  SCREEN
 // ================================================================
 function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-  document.getElementById(name + '-screen').classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`${name}-screen`).classList.add('active');
   if (name === 'title') startTitleAnimation();
   else stopTitleAnimation();
   drawLines();
@@ -570,7 +569,7 @@ function showScreen(name) {
 //  GAME START
 // ================================================================
 function startGame() {
-  var game      = createGame();
+  const game  = createGame();
   answer        = game.answer;
   victim        = game.victim;
   silly         = game.silly;
@@ -584,9 +583,9 @@ function startGame() {
   killRisk      = 0;
   connections   = [];
 
-  fillSel('acc-suspect', SUSPECTS, function(s){ return s.name; }, function(s){ return s.name; });
-  fillSel('acc-room',    ROOMS,    function(r){ return r.name; }, function(r){ return r.emoji + ' ' + r.name; });
-  fillSel('acc-weapon',  WEAPONS,  function(w){ return w.name; }, function(w){ return w.emoji + ' ' + w.name; });
+  fillSel('acc-suspect', SUSPECTS, s => s.name, s => s.name);
+  fillSel('acc-room',    ROOMS,    r => r.name, r => `${r.emoji} ${r.name}`);
+  fillSel('acc-weapon',  WEAPONS,  w => w.name, w => `${w.emoji} ${w.name}`);
 
   document.getElementById('extra-hints-section').style.display = 'none';
   document.getElementById('extra-hints-list').innerHTML = '';
@@ -600,19 +599,15 @@ function startGame() {
 
 function logGame() {
   try {
-    var entry = {
+    const entry = {
       ts: new Date().toISOString(),
       answer: { suspect: answer.suspect.name, room: answer.room.name, weapon: answer.weapon.name },
       victim: victim.name,
-      silly: silly.map(function(s){ return s.name; }),
-      clues: clues.map(function(c){
-        return { speaker: c.speaker.name, text: c.text, accusation: !!c.accusation };
-      }),
-      extraHints: extraHints.map(function(h){
-        return { speaker: h.speaker ? h.speaker.name : null, text: h.text, accusation: !!h.accusation };
-      }),
+      silly: silly.map(s => s.name),
+      clues: clues.map(c => ({ speaker: c.speaker.name, text: c.text, accusation: !!c.accusation })),
+      extraHints: extraHints.map(h => ({ speaker: h.speaker?.name ?? null, text: h.text, accusation: !!h.accusation })),
     };
-    var log = JSON.parse(localStorage.getItem('gameLog') || '[]');
+    const log = JSON.parse(localStorage.getItem('gameLog') || '[]');
     log.push(entry);
     localStorage.setItem('gameLog', JSON.stringify(log));
   } catch(e) {}
@@ -620,23 +615,23 @@ function logGame() {
 
 // Call downloadLog() from the browser console to export the telemetry as a JSON file.
 function downloadLog() {
-  var data = localStorage.getItem('gameLog') || '[]';
-  var blob = new Blob([data], { type: 'application/json' });
-  var a = document.createElement('a');
+  const data = localStorage.getItem('gameLog') || '[]';
+  const blob = new Blob([data], { type: 'application/json' });
+  const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'game-log.json';
   a.click();
 }
 
 function fillSel(id, items, valFn, labelFn) {
-  var sel = document.getElementById(id);
+  const sel = document.getElementById(id);
   sel.innerHTML = '<option value="">— Choose —</option>';
-  items.forEach(function(item){
-    var opt = document.createElement('option');
-    opt.value    = valFn(item);
+  for (const item of items) {
+    const opt = document.createElement('option');
+    opt.value = valFn(item);
     opt.textContent = labelFn(item);
     sel.appendChild(opt);
-  });
+  }
 }
 
 // ================================================================
@@ -647,15 +642,13 @@ function getExtraHint() {
   if (clueRevealIdx < clues.length) {
     clueRevealIdx++;
     renderClues();
-    // Scroll to the new clue
-    var scroll = document.querySelector('.clues-scroll');
-    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+    document.querySelector('.clues-scroll')?.scrollTo({ top: Infinity });
     updateHintButton();
     return;
   }
 
   // Phase 2: all evidence revealed — extra conditional hints with kill risk
-  var nextRisk = KILL_RISKS[Math.min(extraHintIdx + 1, KILL_RISKS.length - 1)];
+  const nextRisk = KILL_RISKS[Math.min(extraHintIdx + 1, KILL_RISKS.length - 1)];
 
   if (nextRisk > 0 && Math.random() * 100 < nextRisk) {
     extraHintIdx++;
@@ -669,52 +662,46 @@ function getExtraHint() {
 
   if (extraHintIdx <= extraHints.length) {
     document.getElementById('extra-hints-section').style.display = 'block';
-    var list = document.getElementById('extra-hints-list');
-    var hint = extraHints[extraHintIdx - 1];
-    var item = document.createElement('div');
-    item.className = 'clue-item extra-hint-item' + (hint.dead ? ' clue-dead' : '');
-    var speakerHTML = '';
-    if (hint.speaker) {
-      var angryClass = hint.accusation ? ' angry' : '';
-      var speakerLabel = hint.dead ? '👻 ' + hint.speaker.name : hint.speaker.name;
-      speakerHTML = '<span class="clue-speaker" style="color:' + hint.speaker.color + '">'
-        + '<span class="clue-crew-icon' + angryClass + '">' + crewSVG(hint.speaker.color, hint.speaker.dark, 18) + '</span>'
-        + speakerLabel
-        + '</span>';
-    } else {
-      speakerHTML = '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
-    }
-    item.innerHTML = '<span class="clue-num">' + extraHintIdx + '</span>'
-      + '<div class="clue-body">'
-      + speakerHTML
-      + '<span class="clue-speech">' + hint.text + '</span>'
+    const list = document.getElementById('extra-hints-list');
+    const hint = extraHints[extraHintIdx - 1];
+    const item = document.createElement('div');
+    item.className = `clue-item extra-hint-item${hint.dead ? ' clue-dead' : ''}`;
+    const speakerHTML = hint.speaker
+      ? (() => {
+          const angryClass = hint.accusation ? ' angry' : '';
+          const label = hint.dead ? `👻 ${hint.speaker.name}` : hint.speaker.name;
+          return `<span class="clue-speaker" style="color:${hint.speaker.color}">`
+            + `<span class="clue-crew-icon${angryClass}">${crewSVG(hint.speaker.color, hint.speaker.dark, 18)}</span>`
+            + `${label}</span>`;
+        })()
+      : '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
+    item.innerHTML = `<span class="clue-num">${extraHintIdx}</span>`
+      + `<div class="clue-body">${speakerHTML}`
+      + `<span class="clue-speech">${hint.text}</span>`
       + '</div>';
     list.appendChild(item);
-    var scroll = item.closest('.clues-scroll');
-    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+    item.closest('.clues-scroll')?.scrollTo({ top: Infinity });
   }
 
   updateHintButton();
 }
 
 function updateHintButton() {
-  var btn     = document.getElementById('hint-btn');
-  var display = document.getElementById('kill-display');
-  var warning = document.getElementById('acc-kill-warning');
+  const btn     = document.getElementById('hint-btn');
+  const display = document.getElementById('kill-display');
+  const warning = document.getElementById('acc-kill-warning');
 
   if (clueRevealIdx < clues.length) {
-    // Phase 1: safe reveal mode
-    var remaining = clues.length - clueRevealIdx;
+    const remaining = clues.length - clueRevealIdx;
     btn.disabled    = false;
-    btn.textContent = '🔍 Reveal Evidence (' + remaining + ' left)';
+    btn.textContent = `🔍 Reveal Evidence (${remaining} left)`;
   } else if (killRisk >= 100) {
     btn.disabled    = true;
     btn.textContent = '💀 Impostor will definitely strike (100%)';
   } else {
-    // Phase 2: extra hints with kill risk
-    var nextRisk = KILL_RISKS[Math.min(extraHintIdx + 1, KILL_RISKS.length - 1)];
+    const nextRisk = KILL_RISKS[Math.min(extraHintIdx + 1, KILL_RISKS.length - 1)];
     btn.disabled    = false;
-    btn.textContent = '🆘 Get Hint (but ' + nextRisk + '% chance impostor strikes!)';
+    btn.textContent = `🆘 Get Hint (but ${nextRisk}% chance impostor strikes!)`;
   }
 
   display.textContent = '';
@@ -730,30 +717,28 @@ function cycleClue(i) {
 }
 
 function renderClues() {
-  var el = document.getElementById('clues-list');
+  const el = document.getElementById('clues-list');
   if (clueRevealIdx === 0) {
     el.innerHTML = '<div style="padding:16px 14px;color:#444;font-size:0.85em;font-style:italic">Press the button below to start revealing evidence...</div>';
     return;
   }
-  var MARK_BADGES = ['', '<span class="mark-safe">✓</span>', '<span class="mark-flag">🚩</span>'];
-  var MARK_STATES = ['', 'state-safe', 'state-suspicious'];
-  el.innerHTML = clues.slice(0, clueRevealIdx).map(function(c, i) {
-    var m = clueMarks[i] || 0;
-    var isNew = (i === clueRevealIdx - 1) ? ' clue-reveal' : '';
-    var deadClass = c.dead ? ' clue-dead' : '';
-    var icon = crewSVG(c.speaker.color, c.speaker.dark, 18);
-    var angryClass = c.accusation ? ' angry' : '';
-    var speakerLabel = c.dead ? '👻 ' + c.speaker.name : c.speaker.name;
-    return '<div class="clue-item' + isNew + deadClass + ' ' + MARK_STATES[m] + '" onclick="cycleClue(' + i + ')">'
-      + '<span class="clue-num">' + (i + 1) + '</span>'
+  const MARK_BADGES = ['', '<span class="mark-safe">✓</span>', '<span class="mark-flag">🚩</span>'];
+  const MARK_STATES = ['', 'state-safe', 'state-suspicious'];
+  el.innerHTML = clues.slice(0, clueRevealIdx).map((c, i) => {
+    const m          = clueMarks[i] || 0;
+    const isNew      = i === clueRevealIdx - 1 ? ' clue-reveal' : '';
+    const deadClass  = c.dead ? ' clue-dead' : '';
+    const angryClass = c.accusation ? ' angry' : '';
+    const label      = c.dead ? `👻 ${c.speaker.name}` : c.speaker.name;
+    return `<div class="clue-item${isNew}${deadClass} ${MARK_STATES[m]}" onclick="cycleClue(${i})">`
+      + `<span class="clue-num">${i + 1}</span>`
       + '<div class="clue-body">'
-      + '<span class="clue-speaker" style="color:' + c.speaker.color + '">'
-      + '<span class="clue-crew-icon' + angryClass + '">' + icon + '</span>'
-      + speakerLabel
-      + '</span>'
-      + '<span class="clue-speech">' + c.text + '</span>'
+      + `<span class="clue-speaker" style="color:${c.speaker.color}">`
+      + `<span class="clue-crew-icon${angryClass}">${crewSVG(c.speaker.color, c.speaker.dark, 18)}</span>`
+      + label + '</span>'
+      + `<span class="clue-speech">${c.text}</span>`
       + '</div>'
-      + (m ? '<span class="clue-mark">' + MARK_BADGES[m] + '</span>' : '')
+      + (m ? `<span class="clue-mark">${MARK_BADGES[m]}</span>` : '')
       + '</div>';
   }).join('');
 }
@@ -762,57 +747,46 @@ function renderClues() {
 //  BOARD RENDERING
 // ================================================================
 function cycleMark(type, name) {
-  var cur = marks[type][name] || 0;
-  marks[type][name] = (cur + 1) % 3;
+  marks[type][name] = ((marks[type][name] || 0) + 1) % 3;
   renderBoard();
 }
 
 function renderBoard() {
-  var el = document.getElementById('suspects-list');
-  var suspectHTML = SUSPECTS.map(function(s) {
-    var state = marks.suspects[s.name] || 0;
-    var stateClass = state === 1 ? 'state-safe' : state === 2 ? 'state-suspicious' : '';
-    var badge = state === 1 ? '<span class="mark-badge mark-safe">✓</span>'
-      : state === 2 ? '<span class="mark-badge mark-flag">🚩</span>' : '';
-    return '<div class="opt-item ' + stateClass + '" onclick="cycleMark(\'suspects\',\'' + s.name + '\')">'
-      + '<div class="crew-icon">' + crewSVG(s.color, s.dark, 32) + '</div>'
-      + '<span class="opt-label" style="color:' + s.color + '">' + s.name + '</span>'
+  const el = document.getElementById('suspects-list');
+  const suspectHTML = SUSPECTS.map(s => {
+    const state      = marks.suspects[s.name] || 0;
+    const stateClass = state === 1 ? 'state-safe' : state === 2 ? 'state-suspicious' : '';
+    const badge      = state === 1 ? '<span class="mark-badge mark-safe">✓</span>'
+                     : state === 2 ? '<span class="mark-badge mark-flag">🚩</span>' : '';
+    return `<div class="opt-item ${stateClass}" onclick="cycleMark('suspects','${s.name}')">`
+      + `<div class="crew-icon">${crewSVG(s.color, s.dark, 32)}</div>`
+      + `<span class="opt-label" style="color:${s.color}">${s.name}</span>`
       + badge
-      + '<div class="opt-node" data-type="suspects" data-name="' + s.name + '" onclick="event.stopPropagation()"></div>'
+      + `<div class="opt-node" data-type="suspects" data-name="${s.name}" onclick="event.stopPropagation()"></div>`
       + '</div>';
   }).join('');
 
-  var victimHTML = '<div class="opt-item opt-dead">'
-    + '<div class="crew-icon">' + crewSVG(victim.color, victim.dark, 32) + '</div>'
-    + '<span class="opt-label" style="color:' + victim.color + '">' + victim.name + '</span>'
+  const victimHTML = `<div class="opt-item opt-dead">`
+    + `<div class="crew-icon">${crewSVG(victim.color, victim.dark, 32)}</div>`
+    + `<span class="opt-label" style="color:${victim.color}">${victim.name}</span>`
     + '<span class="mark-badge">💀</span></div>';
 
   el.innerHTML = suspectHTML + victimHTML;
-  renderList('rooms-list', ROOMS, 'rooms', function(r){
-    return '<span class="opt-icon">' + r.emoji + '</span>'
-         + '<span class="opt-label">' + r.name + '</span>';
-  });
-  renderList('weapons-list', WEAPONS, 'weapons', function(w){
-    return '<span class="opt-icon">' + w.emoji + '</span>'
-         + '<span class="opt-label">' + w.name + '</span>';
-  });
+  renderList('rooms-list',   ROOMS,   'rooms',   r => `<span class="opt-icon">${r.emoji}</span><span class="opt-label">${r.name}</span>`);
+  renderList('weapons-list', WEAPONS, 'weapons', w => `<span class="opt-icon">${w.emoji}</span><span class="opt-label">${w.name}</span>`);
   updateNodeConnectedState();
   drawLines();
 }
 
 function renderList(containerId, items, type, innerFn) {
-  var el = document.getElementById(containerId);
-  el.innerHTML = items.map(function(item){
-    var state = marks[type][item.name] || 0;
-    var stateClass = state === 1 ? 'state-safe' : state === 2 ? 'state-suspicious' : '';
-    var badge = state === 1
-      ? '<span class="mark-badge mark-safe">✓</span>'
-      : state === 2
-        ? '<span class="mark-badge mark-flag">🚩</span>'
-        : '';
-    return '<div class="opt-item ' + stateClass + '" onclick="cycleMark(\'' + type + '\',\'' + item.name + '\')">'
+  document.getElementById(containerId).innerHTML = items.map(item => {
+    const state      = marks[type][item.name] || 0;
+    const stateClass = state === 1 ? 'state-safe' : state === 2 ? 'state-suspicious' : '';
+    const badge      = state === 1 ? '<span class="mark-badge mark-safe">✓</span>'
+                     : state === 2 ? '<span class="mark-badge mark-flag">🚩</span>' : '';
+    return `<div class="opt-item ${stateClass}" onclick="cycleMark('${type}','${item.name}')">`
       + innerFn(item) + badge
-      + '<div class="opt-node" data-type="' + type + '" data-name="' + item.name + '" onclick="event.stopPropagation()"></div>'
+      + `<div class="opt-node" data-type="${type}" data-name="${item.name}" onclick="event.stopPropagation()"></div>`
       + '</div>';
   }).join('');
 }
@@ -821,9 +795,9 @@ function renderList(containerId, items, type, innerFn) {
 //  LINE DRAWING (drag-and-drop connections between board items)
 // ================================================================
 function initNodeDrag() {
-  ['suspects-list', 'rooms-list', 'weapons-list'].forEach(function(id) {
-    document.getElementById(id).addEventListener('mousedown', function(e) {
-      var node = e.target.closest ? e.target.closest('.opt-node') : null;
+  for (const id of ['suspects-list', 'rooms-list', 'weapons-list']) {
+    document.getElementById(id).addEventListener('mousedown', e => {
+      const node = e.target.closest('.opt-node');
       if (!node) return;
       e.preventDefault();
       e.stopPropagation();
@@ -836,7 +810,7 @@ function initNodeDrag() {
       document.addEventListener('mousemove', onNodeDragMove);
       document.addEventListener('mouseup',   onNodeDragEnd);
     });
-  });
+  }
 }
 
 function onNodeDragMove(e) {
@@ -851,27 +825,22 @@ function onNodeDragEnd(e) {
   document.removeEventListener('mousemove', onNodeDragMove);
   document.removeEventListener('mouseup',   onNodeDragEnd);
 
-  var el     = document.elementFromPoint(e.clientX, e.clientY);
-  var toNode = el ? el.closest('.opt-node') : null;
+  const toNode = document.elementFromPoint(e.clientX, e.clientY)?.closest('.opt-node');
 
   if (toNode && toNode !== _drag.fromEl && toNode.dataset.type !== _drag.fromType) {
-    var toType = toNode.dataset.type, toName = toNode.dataset.name;
-    var ft = _drag.fromType, fn = _drag.fromName;
-    var existIdx = -1;
-    for (var i = 0; i < connections.length; i++) {
-      var c = connections[i];
-      if ((c.from.type === ft && c.from.name === fn && c.to.type === toType && c.to.name === toName) ||
-          (c.from.type === toType && c.from.name === toName && c.to.type === ft && c.to.name === fn)) {
-        existIdx = i; break;
-      }
-    }
+    const { fromType: ft, fromName: fn } = _drag;
+    const { type: toType, name: toName } = toNode.dataset;
+    const existIdx = connections.findIndex(c =>
+      (c.from.type === ft && c.from.name === fn && c.to.type === toType && c.to.name === toName) ||
+      (c.from.type === toType && c.from.name === toName && c.to.type === ft && c.to.name === fn)
+    );
     if (existIdx >= 0) connections.splice(existIdx, 1);
     else connections.push({ from: { type: ft, name: fn }, to: { type: toType, name: toName } });
   } else if (!toNode) {
-    var ft2 = _drag.fromType, fn2 = _drag.fromName;
-    connections = connections.filter(function(c) {
-      return !((c.from.type === ft2 && c.from.name === fn2) || (c.to.type === ft2 && c.to.name === fn2));
-    });
+    const { fromType: ft, fromName: fn } = _drag;
+    connections = connections.filter(c =>
+      !((c.from.type === ft && c.from.name === fn) || (c.to.type === ft && c.to.name === fn))
+    );
   }
 
   _drag.active = false;
@@ -881,45 +850,43 @@ function onNodeDragEnd(e) {
 }
 
 function updateNodeConnectedState() {
-  document.querySelectorAll('.opt-node').forEach(function(node) {
-    var t = node.dataset.type, n = node.dataset.name;
-    var connected = connections.some(function(c) {
-      return (c.from.type === t && c.from.name === n) || (c.to.type === t && c.to.name === n);
-    });
+  document.querySelectorAll('.opt-node').forEach(node => {
+    const { type: t, name: n } = node.dataset;
+    const connected = connections.some(c =>
+      (c.from.type === t && c.from.name === n) || (c.to.type === t && c.to.name === n)
+    );
     node.classList.toggle('node-connected', connected);
   });
 }
 
 function drawLines() {
-  var canvas = document.getElementById('lines-canvas');
+  const canvas = document.getElementById('lines-canvas');
   if (!canvas) return;
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
-  var ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
 
   if (!document.getElementById('game-screen').classList.contains('active')) return;
 
-  connections.forEach(function(conn) {
-    var fSel = '.opt-node[data-type="' + conn.from.type + '"][data-name="' + conn.from.name + '"]';
-    var tSel = '.opt-node[data-type="' + conn.to.type   + '"][data-name="' + conn.to.name   + '"]';
-    var fNode = document.querySelector(fSel);
-    var tNode = document.querySelector(tSel);
-    if (!fNode || !tNode) return;
-    var fr = fNode.getBoundingClientRect(), tr = tNode.getBoundingClientRect();
-    drawBezier(ctx, fr.left + fr.width/2, fr.top + fr.height/2,
-                    tr.left + tr.width/2, tr.top + tr.height/2,
+  for (const conn of connections) {
+    const fNode = document.querySelector(`.opt-node[data-type="${conn.from.type}"][data-name="${conn.from.name}"]`);
+    const tNode = document.querySelector(`.opt-node[data-type="${conn.to.type}"][data-name="${conn.to.name}"]`);
+    if (!fNode || !tNode) continue;
+    const fr = fNode.getBoundingClientRect(), tr = tNode.getBoundingClientRect();
+    drawBezier(ctx, fr.left + fr.width / 2, fr.top + fr.height / 2,
+                    tr.left + tr.width / 2, tr.top + tr.height / 2,
                     'rgba(136,204,255,0.75)', 2);
-  });
+  }
 
   if (_drag.active && _drag.fromEl) {
-    var fr = _drag.fromEl.getBoundingClientRect();
-    drawBezier(ctx, fr.left + fr.width/2, fr.top + fr.height/2,
+    const fr = _drag.fromEl.getBoundingClientRect();
+    drawBezier(ctx, fr.left + fr.width / 2, fr.top + fr.height / 2,
                     _drag.curX, _drag.curY, 'rgba(136,204,255,0.38)', 1.5);
   }
 }
 
 function drawBezier(ctx, x1, y1, x2, y2, color, lw) {
-  var mx = (x1 + x2) / 2;
+  const mx = (x1 + x2) / 2;
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.bezierCurveTo(mx, y1, mx, y2, x2, y2);
@@ -932,27 +899,24 @@ function drawBezier(ctx, x1, y1, x2, y2, color, lw) {
 //  ACCUSATION
 // ================================================================
 function submitAccusation() {
-  var s = document.getElementById('acc-suspect').value;
-  var r = document.getElementById('acc-room').value;
-  var w = document.getElementById('acc-weapon').value;
+  const s = document.getElementById('acc-suspect').value;
+  const r = document.getElementById('acc-room').value;
+  const w = document.getElementById('acc-weapon').value;
   if (!s || !r || !w) { alert('Choose all three! 🕵️'); return; }
-
-  var correct = s === answer.suspect.name && r === answer.room.name && w === answer.weapon.name;
-  showResult(correct);
+  showResult(s === answer.suspect.name && r === answer.room.name && w === answer.weapon.name);
 }
 
 // ================================================================
 //  RESULTS
 // ================================================================
 function answerRevealHTML(eject) {
-  var svg = crewSVG(answer.suspect.color, answer.suspect.dark, 56);
-  var crewEl = eject ? '<div class="eject-spin">' + svg + '</div>' : svg;
-  return '<div class="ans-reveal">'
-    + crewEl
+  const svg    = crewSVG(answer.suspect.color, answer.suspect.dark, 56);
+  const crewEl = eject ? `<div class="eject-spin">${svg}</div>` : svg;
+  return `<div class="ans-reveal">${crewEl}`
     + '<div style="text-align:left">'
-    + '<span style="color:' + answer.suspect.color + ';font-size:1.15em">' + answer.suspect.name + '</span><br>'
-    + answer.room.emoji   + ' ' + answer.room.name   + '<br>'
-    + answer.weapon.emoji + ' ' + answer.weapon.name
+    + `<span style="color:${answer.suspect.color};font-size:1.15em">${answer.suspect.name}</span><br>`
+    + `${answer.room.emoji} ${answer.room.name}<br>`
+    + `${answer.weapon.emoji} ${answer.weapon.name}`
     + '</div></div>';
 }
 
@@ -961,31 +925,28 @@ function showKilled() {
   document.getElementById('result-badge').textContent = '💀 THE IMPOSTOR GOT YOU!';
   document.getElementById('result-card').innerHTML    =
     '<p>The impostor found you while you were investigating! They struck before you could react.</p>'
-    + '<p style="margin-top:10px">Your killer was:</p>'
-    + answerRevealHTML(false);
+    + `<p style="margin-top:10px">Your killer was:</p>${answerRevealHTML(false)}`;
   populateResultLog();
   showScreen('result');
   triggerShake();
 }
 
 function showResult(correct) {
-  var badge = document.getElementById('result-badge');
-  var card  = document.getElementById('result-card');
+  const badge = document.getElementById('result-badge');
+  const card  = document.getElementById('result-card');
 
   if (correct) {
     badge.className   = 'result-badge badge-win';
     badge.textContent = '🎉 YOU SOLVED IT!';
-    card.innerHTML    = '<p>Amazing detective work! The crew is safe thanks to you! 🚀</p>' + answerRevealHTML(true);
+    card.innerHTML    = `<p>Amazing detective work! The crew is safe thanks to you! 🚀</p>${answerRevealHTML(true)}`;
     populateResultLog();
     showScreen('result');
     spawnConfetti();
   } else {
     badge.className   = 'result-badge badge-lose';
     badge.textContent = '💀 WRONG ACCUSATION!';
-    card.innerHTML    =
-      '<p>The crew voted you out of the airlock... 😔</p>'
-      + '<p style="margin-top:10px">The real culprit was:</p>'
-      + answerRevealHTML(false);
+    card.innerHTML    = `<p>The crew voted you out of the airlock... 😔</p>`
+      + `<p style="margin-top:10px">The real culprit was:</p>${answerRevealHTML(false)}`;
     populateResultLog();
     showScreen('result');
     triggerShake();
@@ -996,49 +957,38 @@ function populateResultLog() {
   document.getElementById('result-log-clues').innerHTML =
     document.getElementById('clues-list').innerHTML;
 
-  var persEl = document.getElementById('result-personalities');
-  var allCrew = SUSPECTS.concat([victim]);
-  var persItems = allCrew.map(function(c) {
-    var ptype = personalities[c.name];
-    var badgeHTML = ptype
-      ? '<span class="pers-badge ' + ptype + '">' + ptype + '</span>'
-      : '';
-    return '<div class="pers-item">'
-      + crewSVG(c.color, c.dark, 18)
-      + '<span class="pers-name" style="color:' + c.color + '">' + c.name + '</span>'
-      + badgeHTML
-      + '</div>';
+  const persEl    = document.getElementById('result-personalities');
+  const persItems = [...SUSPECTS, victim].map(c => {
+    const ptype     = personalities[c.name];
+    const badgeHTML = ptype ? `<span class="pers-badge ${ptype}">${ptype}</span>` : '';
+    return `<div class="pers-item">${crewSVG(c.color, c.dark, 18)}`
+      + `<span class="pers-name" style="color:${c.color}">${c.name}</span>${badgeHTML}</div>`;
   }).join('');
-  persEl.innerHTML = '<div class="pers-header">CREW PERSONALITIES</div><div class="pers-list">' + persItems + '</div>';
+  persEl.innerHTML     = `<div class="pers-header">CREW PERSONALITIES</div><div class="pers-list">${persItems}</div>`;
   persEl.style.display = 'block';
 
-  var hintsList = document.getElementById('result-log-hints-list');
-  var hintsSection = document.getElementById('result-log-hints');
-  hintsSection.style.display = 'block';
-  hintsList.innerHTML = extraHints.map(function(hint, i) {
-    var revealed = i < extraHintIdx;
-    var deadClass = hint.dead ? ' clue-dead' : '';
-    var unrevClass = revealed ? '' : ' hint-unrevealed';
-    var speakerHTML = '';
-    if (hint.speaker) {
-      var angryClass = hint.accusation ? ' angry' : '';
-      var label = hint.dead ? '👻 ' + hint.speaker.name : hint.speaker.name;
-      speakerHTML = '<span class="clue-speaker" style="color:' + hint.speaker.color + '">'
-        + '<span class="clue-crew-icon' + angryClass + '">' + crewSVG(hint.speaker.color, hint.speaker.dark, 18) + '</span>'
-        + label + '</span>';
-    } else {
-      speakerHTML = '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
-    }
-    return '<div class="clue-item extra-hint-item' + deadClass + unrevClass + '">'
-      + '<span class="clue-num">' + (i + 1) + (revealed ? '' : '<span class="hint-unrevealed-label"> 🔒</span>') + '</span>'
-      + '<div class="clue-body">' + speakerHTML
-      + '<span class="clue-speech">' + hint.text + '</span>'
-      + '</div></div>';
+  document.getElementById('result-log-hints').style.display = 'block';
+  document.getElementById('result-log-hints-list').innerHTML = extraHints.map((hint, i) => {
+    const revealed    = i < extraHintIdx;
+    const deadClass   = hint.dead ? ' clue-dead' : '';
+    const unrevClass  = revealed ? '' : ' hint-unrevealed';
+    const speakerHTML = hint.speaker
+      ? (() => {
+          const angryClass = hint.accusation ? ' angry' : '';
+          const label      = hint.dead ? `👻 ${hint.speaker.name}` : hint.speaker.name;
+          return `<span class="clue-speaker" style="color:${hint.speaker.color}">`
+            + `<span class="clue-crew-icon${angryClass}">${crewSVG(hint.speaker.color, hint.speaker.dark, 18)}</span>`
+            + `${label}</span>`;
+        })()
+      : '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
+    return `<div class="clue-item extra-hint-item${deadClass}${unrevClass}">`
+      + `<span class="clue-num">${i + 1}${revealed ? '' : '<span class="hint-unrevealed-label"> 🔒</span>'}</span>`
+      + `<div class="clue-body">${speakerHTML}<span class="clue-speech">${hint.text}</span></div></div>`;
   }).join('');
 }
 
 function triggerShake() {
-  var el = document.getElementById('result-screen');
+  const el = document.getElementById('result-screen');
   el.classList.remove('screen-shake');
   void el.offsetWidth; // force reflow so re-adding the class restarts the animation
   el.classList.add('screen-shake');
@@ -1048,93 +998,77 @@ function triggerShake() {
 //  CONFETTI
 // ================================================================
 function spawnConfetti() {
-  var cols = ['#c51111','#1538d1','#11802b','#7b2fbe','#c8b800','#ff6600','#00ccff','#ff99ee'];
-  for (var i = 0; i < 90; i++) {
-    (function(delay){
-      setTimeout(function(){
-        var el = document.createElement('div');
-        el.className = 'confetti';
-        el.style.left             = (Math.random() * 100) + 'vw';
-        el.style.background       = cols[Math.floor(Math.random() * cols.length)];
-        el.style.width            = (7 + Math.random() * 9) + 'px';
-        el.style.height           = (7 + Math.random() * 9) + 'px';
-        el.style.animationDuration = (1.6 + Math.random() * 2.4) + 's';
-        document.body.appendChild(el);
-        setTimeout(function(){ el.remove(); }, 4200);
-      }, delay);
-    })(i * 28);
+  const cols = ['#c51111','#1538d1','#11802b','#7b2fbe','#c8b800','#ff6600','#00ccff','#ff99ee'];
+  for (let i = 0; i < 90; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.style.left             = `${Math.random() * 100}vw`;
+      el.style.background       = cols[Math.floor(Math.random() * cols.length)];
+      el.style.width            = `${7 + Math.random() * 9}px`;
+      el.style.height           = `${7 + Math.random() * 9}px`;
+      el.style.animationDuration = `${1.6 + Math.random() * 2.4}s`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4200);
+    }, i * 28);
   }
 }
 
 // ================================================================
 //  TITLE CREW ANIMATION
 // ================================================================
-var _titleRaf = null;
-var _titleCrew = null;
+let _titleRaf  = null;
+let _titleCrew = null;
 
 function startTitleAnimation() {
   if (_titleRaf) return;
-  var container = document.getElementById('title-crew-container');
+  const container = document.getElementById('title-crew-container');
   container.innerHTML = '';
-  var allCrew = SUSPECTS.concat(EXTRAS);
-  var W = window.innerWidth, H = window.innerHeight;
+  const W = window.innerWidth, H = window.innerHeight;
 
-  _titleCrew = allCrew.map(function(c) {
-    var el = document.createElement('div');
+  _titleCrew = [...SUSPECTS, ...EXTRAS].map(c => {
+    const el = document.createElement('div');
     el.style.cssText = 'position:absolute;top:0;left:0;will-change:transform;';
     container.appendChild(el);
-    var baseSize = 36 + Math.random() * 32;
-    var speed    = 0.15 + Math.random() * 0.45;
-    var angle    = Math.random() * Math.PI * 2;
+    const baseSize = 36 + Math.random() * 32;
+    const speed    = 0.15 + Math.random() * 0.45;
+    const angle    = Math.random() * Math.PI * 2;
     return {
-      el:         el,
-      color:      c.color,
-      dark:       c.dark,
-      x:          Math.random() * W,
-      y:          Math.random() * H,
-      vx:         Math.cos(angle) * speed,
-      vy:         Math.sin(angle) * speed,
-      rot:        Math.random() * 360,
-      rotSpd:     (Math.random() - 0.5) * 0.25,
-      scale:      0.4 + Math.random() * 1.1,
-      scaleSpd:   (Math.random() < 0.5 ? 1 : -1) * (0.0008 + Math.random() * 0.0012),
-      baseSize:   baseSize,
-      lastSize:   -1,
+      el, color: c.color, dark: c.dark,
+      x: Math.random() * W,    y: Math.random() * H,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      rot: Math.random() * 360, rotSpd: (Math.random() - 0.5) * 0.25,
+      scale: 0.4 + Math.random() * 1.1,
+      scaleSpd: (Math.random() < 0.5 ? 1 : -1) * (0.0008 + Math.random() * 0.0012),
+      baseSize, lastSize: -1,
     };
   });
 
-  function tick() {
-    var W = window.innerWidth, H = window.innerHeight;
-    _titleCrew.forEach(function(c) {
-      c.x   += c.vx;
-      c.y   += c.vy;
-      c.rot += c.rotSpd;
-      c.scale += c.scaleSpd;
+  const tick = () => {
+    const W = window.innerWidth, H = window.innerHeight;
+    for (const c of _titleCrew) {
+      c.x += c.vx; c.y += c.vy; c.rot += c.rotSpd; c.scale += c.scaleSpd;
       if (c.scale > 1.5)  { c.scale = 1.5;  c.scaleSpd *= -1; }
       if (c.scale < 0.25) { c.scale = 0.25; c.scaleSpd *= -1; }
-      var pad = 80;
+      const pad = 80;
       if (c.x < -pad) c.x = W + pad * 0.5;
       if (c.x > W + pad) c.x = -pad * 0.5;
       if (c.y < -pad) c.y = H + pad * 0.5;
       if (c.y > H + pad) c.y = -pad * 0.5;
-      var sz = Math.round(c.baseSize * c.scale);
-      if (sz !== c.lastSize) {
-        c.el.innerHTML = crewSVG(c.color, c.dark, sz);
-        c.lastSize = sz;
-      }
+      const sz = Math.round(c.baseSize * c.scale);
+      if (sz !== c.lastSize) { c.el.innerHTML = crewSVG(c.color, c.dark, sz); c.lastSize = sz; }
       c.el.style.opacity   = (0.18 + c.scale * 0.28).toFixed(2);
-      c.el.style.transform = 'translate(' + c.x.toFixed(1) + 'px,' + c.y.toFixed(1) + 'px) rotate(' + c.rot.toFixed(1) + 'deg)';
-    });
+      c.el.style.transform = `translate(${c.x.toFixed(1)}px,${c.y.toFixed(1)}px) rotate(${c.rot.toFixed(1)}deg)`;
+    }
     _titleRaf = requestAnimationFrame(tick);
-  }
+  };
   _titleRaf = requestAnimationFrame(tick);
 }
 
 function stopTitleAnimation() {
   if (_titleRaf) { cancelAnimationFrame(_titleRaf); _titleRaf = null; }
   if (_titleCrew) {
-    var container = document.getElementById('title-crew-container');
-    if (container) container.innerHTML = '';
+    document.getElementById('title-crew-container')?.replaceChildren();
     _titleCrew = null;
   }
 }
@@ -1142,42 +1076,39 @@ function stopTitleAnimation() {
 // ================================================================
 //  STAR BACKGROUND
 // ================================================================
-(function initStars(){
-  var canvas = document.getElementById('stars');
-  var ctx    = canvas.getContext('2d');
-  var stars  = [];
+{
+  const canvas = document.getElementById('stars');
+  const ctx    = canvas.getContext('2d');
+  let stars    = [];
 
-  function resize() {
+  const resize = () => {
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
-    stars = [];
-    for (var i = 0; i < 160; i++) {
-      stars.push({
-        x: Math.random() * canvas.width,  y: Math.random() * canvas.height,
-        r: Math.random() * 1.4,           a: 0.2 + Math.random() * 0.7,
-        spd: 0.3 + Math.random() * 0.7,   dir: Math.random() > 0.5 ? 1 : -1,
-        t: Math.random() * Math.PI * 2,
-      });
-    }
-  }
+    stars = Array.from({ length: 160 }, () => ({
+      x: Math.random() * canvas.width,  y: Math.random() * canvas.height,
+      r: Math.random() * 1.4,           a: 0.2 + Math.random() * 0.7,
+      spd: 0.3 + Math.random() * 0.7,   dir: Math.random() > 0.5 ? 1 : -1,
+      t: Math.random() * Math.PI * 2,
+    }));
+  };
 
-  function draw() {
+  const draw = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    var now = Date.now() / 1000;
-    stars.forEach(function(s){
-      var alpha = s.a + 0.2 * Math.sin(now * s.spd * s.dir + s.t);
+    const now = Date.now() / 1000;
+    for (const s of stars) {
+      const alpha = s.a + 0.2 * Math.sin(now * s.spd * s.dir + s.t);
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,' + Math.max(0, alpha) + ')';
+      ctx.fillStyle = `rgba(255,255,255,${Math.max(0, alpha)})`;
       ctx.fill();
-    });
+    }
     requestAnimationFrame(draw);
-  }
+  };
 
   window.addEventListener('resize', resize);
   resize();
   draw();
-})();
+}
 
 // ================================================================
 //  INIT
