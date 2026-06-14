@@ -109,6 +109,9 @@ export const TMPL = {
     (k, r) => `"I don't care what ${k} told you — they were not in ${r}. I would have seen them."`,
     (k, r) => `"${k} is lying about being in ${r}. I never left that room and they weren't there."`,
     (k, r) => `"${k} claims they were in ${r}? That's impossible. I was there the entire time."`,
+    (k, r) => `"I passed through ${r} multiple times that shift. ${k} was not there. Not once."`,
+    (k, r) => `"I went through ${r} — ${k} was nowhere to be found. Their alibi is a lie."`,
+    (k, r) => `"${k} said ${r}? I was in and out of there all shift. They were never there."`,
   ],
   roomHint: [
     r => `"I found the body near ${r}! I panicked and called the emergency meeting immediately!"`,

@@ -9,16 +9,17 @@ export function buildClues(answer, victim, silly) {
   const nonMurderWeapons = WEAPONS.filter(w => w.name !== answer.weapon.name);
   const shuffledNMR      = shuffle(nonMurderRooms.slice());
   const lieRoom          = shuffledNMR[0];
-  const cdRoom           = shuffledNMR[1] || shuffledNMR[0];
+  const cdRoom           = shuffledNMR[1];
+  const killerFakeRoom   = shuffledNMR[2];
 
-  const trustChain = { A, B, C, D, lieRoom, cdRoom };
+  const trustChain = { A, B, C, D, lieRoom, cdRoom, killerFakeRoom };
 
   const core = [
     { speaker: A, text: rand(TMPL.alibi)(lieRoom.name) },
     { speaker: B, text: rand(TMPL.backing)(A.name, lieRoom.name) },
     { speaker: C, text: rand(TMPL.alibi)(cdRoom.name) },
     { speaker: D, text: rand(TMPL.backing)(C.name, cdRoom.name) },
-    { speaker: answer.suspect, text: rand(TMPL.killerLie)(lieRoom.name) },
+    { speaker: answer.suspect, text: rand(TMPL.killerLie)(killerFakeRoom.name) },
     { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(D.name), accusation: true },
     { speaker: D, text: rand(TMPL.roomCorr)(answer.room.name) },
     { speaker: B, text: rand(TMPL.weaponHint)(answer.weapon.name) },
@@ -26,7 +27,7 @@ export function buildClues(answer, victim, silly) {
   ];
 
   const rhRooms = shuffle(nonMurderRooms.filter(r =>
-    r.name !== lieRoom.name && r.name !== cdRoom.name
+    r.name !== lieRoom.name && r.name !== cdRoom.name && r.name !== killerFakeRoom.name
   ));
   const rh = [];
 
@@ -73,7 +74,7 @@ export function buildExtraHints(answer, trustChain, victim) {
 
   hints.push({
     speaker: tc.A,
-    text: rand(TMPL.accusation)(answer.suspect.name, tc.lieRoom.name),
+    text: rand(TMPL.accusation)(answer.suspect.name, tc.killerFakeRoom.name),
     accusation: true,
   });
 
