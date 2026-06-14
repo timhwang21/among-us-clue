@@ -110,15 +110,38 @@ Non-deductive flavor clues — exempt from the minimality check, ignored by the 
 - **Silly lines**: flavor text with no evidentiary value.
 - **Guardian angel**: flavor text from the victim.
 
-## Difficulty Tiers and Future Strategies
+### Y / Converging: A→C, B→C, C→D
+
+```
+A backs C (saw C in room X)
+B backs C (saw C in room X, independent corroboration)
+C backs D (saw D in room Y)
+```
+
+**Deduction**: A vouches → A innocent → C innocent. B vouches → B innocent → C innocent (already). C innocent → D innocent. Four innocents → killer. Harder than chain: neither A nor B starts an obvious single chain; the player must recognize two paths converging on C.
+
+### Two Short Chains: A→B, C→D
+
+```
+A backs B (saw B in room X)
+C backs D (saw D in room Y)
+```
+
+**Deduction**: A vouches → A innocent → B innocent. C vouches → C innocent → D innocent. Four innocents → killer. Subtler than two-pairs: the lack of symmetric backing means each chain must be read independently without the mutual confirmation that makes two-pairs legible.
+
+### Negation Testimony: A→B→C + denial
+
+```
+A backs B, B backs C (three-step trust chain)
+One proven innocent: "[Killer] was NOT in [fakeRoom]"
+```
+
+**Deduction**: A→B→C proves three innocents. The denial clue contradicts the killer's claimed alibi — the player must connect "who denied the alibi" (an honest proven innocent) with "who claimed it" (the killer). Different from lone-wolf: the evidence is an indirect contradiction, not a direct sighting.
+
+## Difficulty Tiers
 
 Each strategy carries a `difficulty` field (1–3) used by `pickStrategy()` for potential difficulty-filtered selection:
 
 - **1 — Easy**: Two Mutual Pairs (symmetric, immediately legible)
-- **2 — Medium**: Chain, Star, Cycle (require cascading or ring recognition)
-- **3 — Hard**: Fork, Lone-Wolf (cross-corroboration or isolated witness)
-
-Candidates for future implementation:
-- **Y / converging**: A→C, B→C, C→D. Two independent vouchers corroborate C, then C continues the chain.
-- **Two short chains**: A→B, C→D. Asymmetric two-pairs with no reciprocity; subtler than mutual backing.
-- **Negative testimony**: an innocent states "X was NOT in room Y" contradicting the killer's false alibi. The `killerContradict` template already exists (currently only in extra hints).
+- **2 — Medium**: Chain, Star, Cycle, Two Short Chains (require cascading or pattern recognition)
+- **3 — Hard**: Fork, Lone-Wolf, Y-Converging, Negation-Testimony (cross-corroboration, isolated witness, or indirect contradiction)

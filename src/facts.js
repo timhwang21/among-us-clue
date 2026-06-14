@@ -4,15 +4,20 @@
 export const TYPE = {
   VOUCH:       'vouch',       // `from` testifies `to` was in `room`
   KILLER_LIE:  'killerLie',   // killer's false alibi room
-  WITNESS:     'witness',     // innocent directly names killer (kind: 'room'|'weapon')
+  WITNESS:     'witness',     // innocent directly names killer (kind: 'suspect'|'room'|'weapon')
   ROOM_CORR:   'roomCorr',    // corroborates the murder room
   WEAPON_HINT: 'weaponHint',  // murder weapon missing from storage
   WEAPON_ELIM: 'weaponElim',  // a non-murder weapon, ruled out
+  NEGATION:    'negation',    // innocent contradicts killer's fake alibi: "killer was NOT in fakeRoom"
 };
 
-export const vouch       = (from, to, room)       => ({ type: TYPE.VOUCH,       from, to, room });
-export const killerLie   = (room)                  => ({ type: TYPE.KILLER_LIE,  room });
-export const witness     = (speaker, kind, value)  => ({ type: TYPE.WITNESS,     speaker, kind, value });
-export const roomCorr    = (speaker, room)          => ({ type: TYPE.ROOM_CORR,   speaker, room });
-export const weaponHint  = (speaker, weapon)        => ({ type: TYPE.WEAPON_HINT, speaker, weapon });
-export const weaponElim  = (weapon)                 => ({ type: TYPE.WEAPON_ELIM, weapon });
+export const vouch       = (from, to, room)        => ({ type: TYPE.VOUCH,       from, to, room });
+export const killerLie   = (room)                   => ({ type: TYPE.KILLER_LIE,  room });
+export const witness     = (speaker, kind, value)   => ({ type: TYPE.WITNESS,     speaker, kind, value });
+export const roomCorr    = (speaker, room)           => ({ type: TYPE.ROOM_CORR,   speaker, room });
+export const weaponHint  = (speaker, weapon)         => ({ type: TYPE.WEAPON_HINT, speaker, weapon });
+export const weaponElim  = (weapon)                  => ({ type: TYPE.WEAPON_ELIM, weapon });
+// negation: speaker (innocent) says `killer` was NOT in `fakeRoom`, contradicting the killer's lie.
+// The speaker must be proven innocent before it fires (same deductive power as witness kind='suspect',
+// but rendered with killerContradict flavor instead of a direct accusation).
+export const negation    = (speaker, killer, fakeRoom) => ({ type: TYPE.NEGATION, speaker, killer, fakeRoom });

@@ -121,16 +121,15 @@ describe('property tests: createGame always produces valid games', () => {
     }
   });
 
-  it('all 6 strategy types appear across many games', () => {
+  it('all 9 strategy types appear across many games', () => {
     const seen = new Set();
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 500; i++) {
       seen.add(createGame().trustChain.structure);
     }
-    expect(seen.has('two-pairs')).toBe(true);
-    expect(seen.has('chain')).toBe(true);
-    expect(seen.has('star')).toBe(true);
-    expect(seen.has('cycle')).toBe(true);
-    expect(seen.has('fork')).toBe(true);
-    expect(seen.has('lone-wolf')).toBe(true);
+    const expected = ['two-pairs', 'chain', 'star', 'cycle', 'fork', 'lone-wolf',
+                      'y-converging', 'two-chains', 'negation-testimony'];
+    for (const id of expected) {
+      expect(seen.has(id)).toBe(true);
+    }
   });
 });

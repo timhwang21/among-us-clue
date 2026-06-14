@@ -37,6 +37,12 @@ function solve(facts) {
         if (f.kind === 'weapon'  && !crimeWeapon)  { crimeWeapon = f.value.name; firedFacts.add(f); changed = true; }
       }
 
+      if (f.type === TYPE.NEGATION) {
+        // An innocent's denial of the killer's fake alibi identifies the killer.
+        if (!innocents.has(f.speaker.name)) continue;
+        if (!killedBy) { killedBy = f.killer.name; firedFacts.add(f); changed = true; }
+      }
+
       if (f.type === TYPE.ROOM_CORR && !crimeRoom) {
         crimeRoom = f.room.name; firedFacts.add(f); changed = true;
       }
@@ -131,6 +137,10 @@ function candidateConsistent(facts, { suspect, room, weapon }) {
       if (f.kind === 'room'    && f.value.name !== room.name)    return false;
       if (f.kind === 'weapon'  && f.value.name !== weapon.name)  return false;
     }
+    if (f.type === TYPE.NEGATION) {
+      if (f.speaker.name === suspect.name) return false; // speaker must be innocent
+      if (f.killer.name !== suspect.name) return false;  // names a specific killer
+    }
     if (f.type === TYPE.ROOM_CORR && f.room.name !== room.name) return false;
     if (f.type === TYPE.WEAPON_HINT && f.weapon.name !== weapon.name) return false;
   }
@@ -141,7 +151,7 @@ function candidateConsistent(facts, { suspect, room, weapon }) {
 // Vouch edges define the structural strategy signature and are intentionally redundant in
 // some patterns (two-pairs mutual backing, cycle, fork cross-corroboration) — they're exempt.
 function isMinimal(facts, answer) {
-  const closingTypes = new Set([TYPE.WITNESS, TYPE.ROOM_CORR, TYPE.WEAPON_HINT, TYPE.WEAPON_ELIM]);
+  const closingTypes = new Set([TYPE.WITNESS, TYPE.NEGATION, TYPE.ROOM_CORR, TYPE.WEAPON_HINT, TYPE.WEAPON_ELIM]);
   for (const f of facts) {
     if (!closingTypes.has(f.type)) continue;
     const without = facts.filter(x => x !== f);

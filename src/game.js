@@ -1,6 +1,6 @@
 import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, TMPL, GUARDIAN_ANGEL_LINES, GUARDIAN_ANGEL_EVIDENCE, WEAPON_ELIM } from './data.js';
 import { rand, shuffle } from './utils.js';
-import { vouch, witness, roomCorr, weaponHint } from './facts.js';
+import { vouch, witness, negation, roomCorr, weaponHint } from './facts.js';
 import { pickStrategy } from './strategies/index.js';
 import { factToClue, buildNoise } from './render.js';
 import { verify } from './solver.js';
@@ -31,6 +31,12 @@ export function buildClues(answer, victim) {
       // names the killer directly — this is the SOLE path to killer identification.
       const witnessSpeaker = rand(provenInnocents);
       coreFacts.push(witness(witnessSpeaker, 'suspect', answer.suspect));
+    }
+
+    if (strategy.requiresNegation) {
+      // Negation-testimony: a proven innocent contradicts the killer's fake alibi.
+      const negationSpeaker = rand(provenInnocents);
+      coreFacts.push(negation(negationSpeaker, answer.suspect, result.killerFakeRoom));
     }
 
     coreFacts.push(roomCorr(corrSpeaker, answer.room));

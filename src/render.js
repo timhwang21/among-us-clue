@@ -25,6 +25,10 @@ export function factToClue(fact, answer) {
         return [{ speaker: fact.speaker, text: rand(TMPL.witnessWeapon)(answer.suspect.name, answer.weapon.name) }];
       return [{ speaker: fact.speaker, text: rand(TMPL.witnessRoom)(answer.suspect.name, answer.room.name) }];
 
+    case TYPE.NEGATION:
+      // An innocent contradicts the killer's fake alibi: "I was in [fakeRoom] — [killer] wasn't there."
+      return [{ speaker: fact.speaker, text: rand(TMPL.killerContradict)(answer.suspect.name, fact.fakeRoom.name), accusation: true }];
+
     case TYPE.ROOM_CORR:
       return [{ speaker: fact.speaker, text: rand(TMPL.roomCorr)(answer.room.name) }];
 
