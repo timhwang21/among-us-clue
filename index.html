@@ -241,7 +241,23 @@ canvas#stars {
 .fgroup select option { background: #1a1a35; }
 
 /* =========== RESULT SCREEN =========== */
-#result-screen { justify-content: center; text-align: center; gap: 18px; padding-top: 30px; }
+#result-screen { justify-content: flex-start; align-items: center; text-align: center; gap: 18px; padding-top: 30px; }
+
+#result-log {
+  width: 100%; max-width: 600px; text-align: left;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px; overflow: hidden;
+}
+.result-log-header {
+  font-family: 'Orbitron', sans-serif; font-size: 0.7em; letter-spacing: 3px;
+  color: #88ccff; padding: 13px 14px 10px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: rgba(13,13,40,0.97);
+}
+.result-log-section { border-top: 1px solid rgba(255,255,255,0.07); }
+.result-log-section-label {
+  font-size: 0.72em; letter-spacing: 2px; color: #555; padding: 8px 14px 4px;
+  text-transform: uppercase;
+}
 
 .result-badge { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(1.6em, 5vw, 2.8em); }
 .badge-win  { color: #44ff88; text-shadow: 0 0 30px rgba(68,255,136,0.8); }
@@ -437,6 +453,14 @@ canvas#stars {
     <button class="btn btn-primary" onclick="startGame()">🔄 Play Again</button>
     <button class="btn btn-secondary" onclick="showScreen('title')">🏠 Main Menu</button>
     <button class="btn btn-secondary" onclick="downloadLog()">📥 Download Log</button>
+  </div>
+  <div id="result-log">
+    <div class="result-log-header">EVIDENCE LOG</div>
+    <div id="result-log-clues"></div>
+    <div id="result-log-hints" class="result-log-section" style="display:none">
+      <div class="result-log-section-label">Extra Hints</div>
+      <div id="result-log-hints-list"></div>
+    </div>
   </div>
 </div>
 
@@ -773,6 +797,7 @@ function showKilled() {
     '<p>The impostor found you while you were investigating! They struck before you could react.</p>'
     + '<p style="margin-top:10px">Your killer was:</p>'
     + answerRevealHTML(false);
+  populateResultLog();
   showScreen('result');
   triggerShake();
 }
@@ -785,6 +810,7 @@ function showResult(correct) {
     badge.className   = 'result-badge badge-win';
     badge.textContent = '🎉 YOU SOLVED IT!';
     card.innerHTML    = '<p>Amazing detective work! The crew is safe thanks to you! 🚀</p>' + answerRevealHTML(true);
+    populateResultLog();
     showScreen('result');
     spawnConfetti();
   } else {
@@ -794,8 +820,22 @@ function showResult(correct) {
       '<p>The crew voted you out of the airlock... 😔</p>'
       + '<p style="margin-top:10px">The real culprit was:</p>'
       + answerRevealHTML(false);
+    populateResultLog();
     showScreen('result');
     triggerShake();
+  }
+}
+
+function populateResultLog() {
+  document.getElementById('result-log-clues').innerHTML =
+    document.getElementById('clues-list').innerHTML;
+  var hintItems = document.getElementById('extra-hints-list');
+  var hintsSection = document.getElementById('result-log-hints');
+  if (hintItems && hintItems.children.length > 0) {
+    document.getElementById('result-log-hints-list').innerHTML = hintItems.innerHTML;
+    hintsSection.style.display = 'block';
+  } else {
+    hintsSection.style.display = 'none';
   }
 }
 
