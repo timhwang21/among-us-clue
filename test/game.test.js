@@ -173,4 +173,5 @@ describe('createGame', () => {
     const mentionsWeapon = last.text.includes(answer.weapon.name);
     expect(mentionsRoom || mentionsWeapon).toBe(true);
   });
+
 });

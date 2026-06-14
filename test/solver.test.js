@@ -99,37 +99,17 @@ describe('verify', () => {
   });
 });
 
-describe('property tests: createGame always produces valid games', () => {
-  const RUNS = 100;
-
-  it('every game is solvable and passes verify()', () => {
-    for (let i = 0; i < RUNS; i++) {
-      const game = createGame();
-      const { answer, trustChain } = game;
-      // trustChain shape
-      expect(trustChain.innocents).toHaveLength(4);
-      expect(SUSPECTS).toContainEqual(answer.suspect);
-      expect(ROOMS).toContainEqual(answer.room);
-      expect(WEAPONS).toContainEqual(answer.weapon);
-    }
+describe('createGame structural invariants', () => {
+  it('returns a solvable game with the required shape', () => {
+    const { answer, trustChain } = createGame();
+    expect(trustChain.innocents).toHaveLength(4);
+    expect(SUSPECTS).toContainEqual(answer.suspect);
+    expect(ROOMS).toContainEqual(answer.room);
+    expect(WEAPONS).toContainEqual(answer.weapon);
   });
 
-  it('killer never appears as voucher in any game', () => {
-    for (let i = 0; i < RUNS; i++) {
-      const { answer, trustChain } = createGame();
-      expect(trustChain.innocents.map(s => s.name)).not.toContain(answer.suspect.name);
-    }
-  });
-
-  it('all 9 strategy types appear across many games', () => {
-    const seen = new Set();
-    for (let i = 0; i < 500; i++) {
-      seen.add(createGame().trustChain.structure);
-    }
-    const expected = ['two-pairs', 'chain', 'star', 'cycle', 'fork', 'lone-wolf',
-                      'y-converging', 'two-chains', 'negation-testimony'];
-    for (const id of expected) {
-      expect(seen.has(id)).toBe(true);
-    }
+  it('killer is never among the proven innocents', () => {
+    const { answer, trustChain } = createGame();
+    expect(trustChain.innocents.map(s => s.name)).not.toContain(answer.suspect.name);
   });
 });

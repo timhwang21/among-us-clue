@@ -1194,7 +1194,7 @@ function speakerHTML(c, { angry = false, dead = false, deductive = null, persona
 
 function populateResultLog() {
   const MARK_STATES = ['', 'state-safe', 'state-suspicious'];
-  document.getElementById('result-log-clues').innerHTML = clues.slice(0, clueRevealIdx).map((c, i) => {
+  document.getElementById('result-log-clues').innerHTML = clues.map((c, i) => {
     const m         = clueMarks[i] || 0;
     const deadClass = c.dead ? ' clue-dead' : '';
     return `<div class="clue-item${deadClass} ${MARK_STATES[m]}">`
@@ -1205,14 +1205,12 @@ function populateResultLog() {
 
   document.getElementById('result-log-hints').style.display = 'block';
   document.getElementById('result-log-hints-list').innerHTML = extraHints.map((hint, i) => {
-    const revealed   = i < extraHintIdx;
-    const deadClass  = hint.dead ? ' clue-dead' : '';
-    const unrevClass = revealed ? '' : ' hint-unrevealed';
-    const speaker    = hint.speaker
+    const deadClass = hint.dead ? ' clue-dead' : '';
+    const speaker   = hint.speaker
       ? speakerHTML(hint.speaker, { angry: !!hint.accusation, dead: !!hint.dead })
       : '<span class="extra-hint-label">🔍 INVESTIGATION</span>';
-    return `<div class="clue-item extra-hint-item${deadClass}${unrevClass}">`
-      + `<span class="clue-num">${i + 1}${revealed ? '' : '<span class="hint-unrevealed-label"> 🔒</span>'}</span>`
+    return `<div class="clue-item extra-hint-item${deadClass}">`
+      + `<span class="clue-num">${i + 1}</span>`
       + `<div class="clue-body">${speaker}<span class="clue-speech">${hint.text}</span></div></div>`;
   }).join('');
 }

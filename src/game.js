@@ -1,5 +1,5 @@
 import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, TMPL, INVESTIGATION } from './data.js';
-import { rand, shuffle } from './utils.js';
+import { rand, shuffle, deconflictConsecutive } from './utils.js';
 import { vouch, witness, negation, roomCorr, weaponHint } from './facts.js';
 import { pickStrategy } from './strategies/index.js';
 import { factToClue, buildNoise } from './render.js';
@@ -76,7 +76,7 @@ export function buildClues(answer, victim, personalities) {
       personalities,
     });
 
-    const clues = shuffle([...deductiveClues, ...decorative, ...noiseClues]);
+    const clues = deconflictConsecutive(shuffle([...deductiveClues, ...decorative, ...noiseClues]), c => c.speaker.name);
     const trustChain = { innocents, killerFakeRoom, structure: strategy.id };
     return { clues, trustChain };
   }
