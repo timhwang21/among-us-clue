@@ -26,8 +26,8 @@ test('game screen has correct structure', async ({ page }) => {
   await expect(page.locator('#rooms-list')).toBeVisible();
   await expect(page.locator('#weapons-list')).toBeVisible();
 
-  // 8 suspects total (5 + 2 silly + 1 victim)
-  await expect(page.locator('#suspects-list .opt-item')).toHaveCount(8);
+  // 6 items total (5 suspects + 1 victim)
+  await expect(page.locator('#suspects-list .opt-item')).toHaveCount(6);
 
   // Exactly 1 victim (dead, not clickable)
   await expect(page.locator('#suspects-list .opt-dead')).toHaveCount(1);
