@@ -94,6 +94,21 @@ describe('createGame', () => {
     expect(seen.size).toBe(2);
   });
 
+  it('exactly 1 guardian angel clue from victim with dead: true', () => {
+    const { victim, clues } = createGame();
+    const ghostClues = clues.filter(c => c.speaker.name === victim.name && c.dead === true);
+    expect(ghostClues).toHaveLength(1);
+  });
+
+  it('guardian angel base clue has no helpful keywords', () => {
+    const { victim, answer, clues } = createGame();
+    const ghostClue = clues.find(c => c.speaker.name === victim.name && c.dead === true);
+    expect(ghostClue).toBeDefined();
+    expect(ghostClue.text).not.toContain(answer.room.name);
+    expect(ghostClue.text).not.toContain(answer.weapon.name);
+    expect(ghostClue.text).not.toContain(answer.suspect.name);
+  });
+
   it('no roomHint phrases in base clues', () => {
     const { clues } = createGame();
     for (const clue of clues) {
@@ -103,9 +118,9 @@ describe('createGame', () => {
     }
   });
 
-  it('extraHints has exactly 5 entries', () => {
+  it('extraHints has exactly 6 entries', () => {
     const { extraHints } = createGame();
-    expect(extraHints).toHaveLength(5);
+    expect(extraHints).toHaveLength(6);
   });
 
   it('all extraHints have non-empty text', () => {
@@ -134,5 +149,20 @@ describe('createGame', () => {
   it('extraHints[3] (direct accusation) DOES mention the killer name', () => {
     const { answer, extraHints } = createGame();
     expect(extraHints[3].text).toContain(answer.suspect.name);
+  });
+
+  it('last extraHint is guardian angel from victim with dead: true', () => {
+    const { victim, extraHints } = createGame();
+    const last = extraHints[extraHints.length - 1];
+    expect(last.dead).toBe(true);
+    expect(last.speaker.name).toBe(victim.name);
+  });
+
+  it('guardian angel extra hint mentions the murder room or murder weapon', () => {
+    const { answer, extraHints } = createGame();
+    const last = extraHints[extraHints.length - 1];
+    const mentionsRoom = last.text.includes(answer.room.name);
+    const mentionsWeapon = last.text.includes(answer.weapon.name);
+    expect(mentionsRoom || mentionsWeapon).toBe(true);
   });
 });

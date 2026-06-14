@@ -1,4 +1,4 @@
-import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, SILLY_LINES, TMPL } from './data.js';
+import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, SILLY_LINES, GUARDIAN_ANGEL_LINES, GUARDIAN_ANGEL_EVIDENCE, TMPL } from './data.js';
 import { rand, shuffle } from './utils.js';
 
 export function buildClues(answer, victim, silly) {
@@ -39,6 +39,7 @@ export function buildClues(answer, victim, silly) {
 
   rh.push({ speaker: silly[0], text: rand(SILLY_LINES) });
   rh.push({ speaker: silly[1], text: rand(SILLY_LINES) });
+  rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true });
 
   const accusers = shuffle([A, B, C, D]);
   rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true });
@@ -47,7 +48,7 @@ export function buildClues(answer, victim, silly) {
   return { clues: shuffle(core.concat(rh)), trustChain };
 }
 
-export function buildExtraHints(answer, trustChain) {
+export function buildExtraHints(answer, trustChain, victim) {
   const tc         = trustChain;
   const nonWeapons = WEAPONS.filter(w => w.name !== answer.weapon.name);
   const hints      = [];
@@ -81,6 +82,15 @@ export function buildExtraHints(answer, trustChain) {
     text: rand(TMPL.backing)(tc.D.name, tc.cdRoom.name),
   });
 
+  const revealRoom = Math.random() < 0.5;
+  hints.push({
+    speaker: victim,
+    text: revealRoom
+      ? rand(GUARDIAN_ANGEL_EVIDENCE.room)(answer.room.name)
+      : rand(GUARDIAN_ANGEL_EVIDENCE.weapon)(answer.weapon.name),
+    dead: true,
+  });
+
   return hints;
 }
 
@@ -90,6 +100,6 @@ export function createGame() {
   const victim = extras[0];
   const silly  = [extras[1], extras[2]];
   const { clues, trustChain } = buildClues(answer, victim, silly);
-  const extraHints = buildExtraHints(answer, trustChain);
+  const extraHints = buildExtraHints(answer, trustChain, victim);
   return { answer, victim, silly, clues, extraHints, trustChain };
 }

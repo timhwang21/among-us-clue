@@ -202,6 +202,8 @@ canvas#stars {
 .clue-item.state-suspicious:hover { background: rgba(255,170,0,0.13); }
 .clue-item.state-safe { opacity: 0.38; }
 .clue-item.state-safe:hover { opacity: 0.55; }
+.clue-item.clue-dead { background: rgba(100,60,180,0.07); border-left: 3px solid rgba(150,100,220,0.3); padding-left: 11px; }
+.clue-item.clue-dead:hover { background: rgba(100,60,180,0.12); }
 .clue-mark { flex-shrink: 0; font-size: 0.9em; align-self: center; }
 .clue-crew-icon { display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 0; }
 
@@ -586,13 +588,14 @@ function getExtraHint() {
     var list = document.getElementById('extra-hints-list');
     var hint = extraHints[extraHintIdx - 1];
     var item = document.createElement('div');
-    item.className = 'clue-item extra-hint-item';
+    item.className = 'clue-item extra-hint-item' + (hint.dead ? ' clue-dead' : '');
     var speakerHTML = '';
     if (hint.speaker) {
       var angryClass = hint.accusation ? ' angry' : '';
+      var speakerLabel = hint.dead ? '👻 ' + hint.speaker.name : hint.speaker.name;
       speakerHTML = '<span class="clue-speaker" style="color:' + hint.speaker.color + '">'
         + '<span class="clue-crew-icon' + angryClass + '">' + crewSVG(hint.speaker.color, hint.speaker.dark, 18) + '</span>'
-        + hint.speaker.name
+        + speakerLabel
         + '</span>';
     } else {
       speakerHTML = '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
@@ -653,14 +656,16 @@ function renderClues() {
   el.innerHTML = clues.slice(0, clueRevealIdx).map(function(c, i) {
     var m = clueMarks[i] || 0;
     var isNew = (i === clueRevealIdx - 1) ? ' clue-reveal' : '';
+    var deadClass = c.dead ? ' clue-dead' : '';
     var icon = crewSVG(c.speaker.color, c.speaker.dark, 18);
     var angryClass = c.accusation ? ' angry' : '';
-    return '<div class="clue-item' + isNew + ' ' + MARK_STATES[m] + '" onclick="cycleClue(' + i + ')">'
+    var speakerLabel = c.dead ? '👻 ' + c.speaker.name : c.speaker.name;
+    return '<div class="clue-item' + isNew + deadClass + ' ' + MARK_STATES[m] + '" onclick="cycleClue(' + i + ')">'
       + '<span class="clue-num">' + (i + 1) + '</span>'
       + '<div class="clue-body">'
       + '<span class="clue-speaker" style="color:' + c.speaker.color + '">'
       + '<span class="clue-crew-icon' + angryClass + '">' + icon + '</span>'
-      + c.speaker.name
+      + speakerLabel
       + '</span>'
       + '<span class="clue-speech">' + c.text + '</span>'
       + '</div>'

@@ -17,6 +17,32 @@ export const EXTRAS = [
   { name: 'Coral',  color: '#ec7578', dark: '#a83a3c' },
 ];
 
+export const GUARDIAN_ANGEL_LINES = [
+  '"Hello? Can anyone hear me? ...No. Right. Okay."',
+  '"I\'m still here, you know. Just... floating. It\'s fine."',
+  '"Being dead is somehow exactly as boring as being alive. Minus the tasks."',
+  '"I tried to point at the killer but nobody could see me. Very frustrating."',
+  '"In case it matters, I was NOT having a good day even before all this."',
+  '"I\'m watching everything unfold from up here and I have so many notes."',
+  '"No one has fixed the oxygen yet, by the way. I\'m just saying."',
+  '"From where I\'m standing — or floating, technically — nothing makes sense."',
+];
+
+export const GUARDIAN_ANGEL_EVIDENCE = {
+  room:   [
+    r => `"Wait — I remember now. It happened in ${r}. I\'m sure of it."`,
+    r => `"I\'m piecing it together... I was near ${r} when everything went dark."`,
+    r => `"The last place I remember being... it was ${r}. That\'s where it happened."`,
+    r => `"${r}. That\'s the room. I didn\'t understand at the time, but now I do."`,
+  ],
+  weapon: [
+    w => `"I saw a ${w} right before... well. You know. A ${w}. That\'s all I\'ll say."`,
+    w => `"Whatever hit me — it was a ${w}. I got a very clear look, briefly."`,
+    w => `"A ${w} was the last thing I saw. I\'m almost certain about that part."`,
+    w => `"If I had to guess — and I don\'t, because I\'m dead and I know — it was the ${w}."`,
+  ],
+};
+
 export const SILLY_LINES = [
   '"I was just eating my spaghetti. Does no one care about my spaghetti?"',
   '"I think the vents are haunted. Unrelated to the murder, I just wanted someone to know."',
