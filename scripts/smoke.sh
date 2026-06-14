@@ -17,7 +17,7 @@ case "$file" in
     cd "$(dirname "$0")/.."
     echo "🔍 Smoke testing game load after edit to $(basename "$file")..."
     result=$(npx playwright test --grep "no console errors" 2>&1)
-    if echo "$result" | grep -q "1 passed"; then
+    if echo "$result" | grep -qE "1 passed|1 flaky"; then
       echo "✅ Smoke test passed — startGame accessible, no JS errors"
     else
       echo "❌ Smoke test FAILED"

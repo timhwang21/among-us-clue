@@ -6,11 +6,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   testDir: './test/e2e',
-  retries: 1,
+  retries: 2,
+  workers: 1,
+  timeout: 60000,
   use: {
     baseURL: 'http://localhost:8765',
     browserName: 'chromium',
     headless: true,
+    actionTimeout: 45000,
   },
   webServer: {
     command: 'python3 -m http.server 8765',

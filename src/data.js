@@ -188,6 +188,22 @@ export const TMPL = {
     n => `"Has anyone else noticed ${n} being weird? Because I have. Just saying."`,
     n => `"I think we're looking at the wrong person. ${n} was near the scene. Why isn't anyone asking them?"`,
   ],
+  witnessWeapon: [
+    (k, w) => `"I saw ${k} carrying the ${w}. It was right before everything happened."`,
+    (k, w) => `"${k} had the ${w} earlier. I didn't think much of it — now I do."`,
+    (k, w) => `"I walked past ${k} and they were holding a ${w}. I remember it clearly."`,
+    (k, w) => `"${k} was messing with a ${w} before the alarm went off. Seemed out of place."`,
+    (k, w) => `"Pretty sure I saw ${k} with the ${w}. Seemed like an odd thing to be carrying."`,
+    (k, w) => `"${k} had the ${w} and seemed to be in a hurry. I didn't say anything at the time."`,
+  ],
+  witnessRoom: [
+    (k, r) => `"I saw ${k} leaving ${r} in a hurry. Right before the alarm went off."`,
+    (k, r) => `"${k} was coming out of ${r} just before everything started. They looked... off."`,
+    (k, r) => `"I definitely saw ${k} near ${r} right before the alarm. Make of that what you will."`,
+    (k, r) => `"${k} was heading into ${r} earlier. Alone. I thought that was a little odd."`,
+    (k, r) => `"I passed ${k} outside ${r} not long before the alarm. They seemed like they were trying not to be seen."`,
+    (k, r) => `"${k} slipped out of ${r} right around when the incident must have happened."`,
+  ],
 };
 
 export const WEAPON_ELIM = [
