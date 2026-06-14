@@ -616,7 +616,6 @@ let extraHintIdx  = 0;
 let killRisk      = 0;
 let marks         = { suspects: {}, rooms: {}, weapons: {} };
 let victim        = null;
-let silly         = [];
 let personalities = {};
 let trustChain    = {};
 let connections   = [];
@@ -660,7 +659,6 @@ function startGame() {
   const game  = createGame();
   answer        = game.answer;
   victim        = game.victim;
-  silly         = game.silly;
   clues         = game.clues;
   extraHints    = game.extraHints;
   personalities = game.personalities || {};
@@ -699,7 +697,6 @@ function buildGameEntry(outcome = null) {
     outcome,
     answer: { suspect: answer.suspect.name, room: answer.room.name, weapon: answer.weapon.name },
     victim: victim.name,
-    silly: silly.map(s => s.name),
     personalities,
     trustChain: {
       innocents: trustChain.innocents.map(s => s.name),
@@ -759,7 +756,6 @@ function replayGame(id) {
 
     answer       = { suspect: findCrew(saved.answer.suspect), room: ROOMS.find(r => r.name === saved.answer.room), weapon: WEAPONS.find(w => w.name === saved.answer.weapon) };
     victim       = findCrew(saved.victim);
-    silly        = saved.silly.map(findCrew);
     personalities = saved.personalities;
     trustChain   = {
       innocents:      saved.trustChain.innocents.map(n => SUSPECTS.find(s => s.name === n)),

@@ -14,11 +14,10 @@ describe('createGame', () => {
     const game = createGame();
     expect(game).toHaveProperty('answer');
     expect(game).toHaveProperty('victim');
-    expect(game).toHaveProperty('silly');
     expect(game).toHaveProperty('clues');
     expect(game).toHaveProperty('extraHints');
     expect(game).toHaveProperty('trustChain');
-    expect(game.silly).toHaveLength(2);
+    expect(game).toHaveProperty('personalities');
   });
 
   it('answer.suspect is from SUSPECTS', () => {
@@ -36,17 +35,9 @@ describe('createGame', () => {
     expect(WEAPONS).toContainEqual(answer.weapon);
   });
 
-  it('victim and both silly crewmates are from EXTRAS', () => {
-    const { victim, silly } = createGame();
+  it('victim is from EXTRAS', () => {
+    const { victim } = createGame();
     expect(EXTRAS).toContainEqual(victim);
-    expect(EXTRAS).toContainEqual(silly[0]);
-    expect(EXTRAS).toContainEqual(silly[1]);
-  });
-
-  it('victim, silly[0], and silly[1] are all distinct', () => {
-    const { victim, silly } = createGame();
-    const names = [victim.name, silly[0].name, silly[1].name];
-    expect(new Set(names).size).toBe(3);
   });
 
   it('all clues have a speaker with name/color/dark and non-empty text', () => {
@@ -84,10 +75,11 @@ describe('createGame', () => {
     expect(innocentAccusations.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('at least 2 silly lines appear in base clues', () => {
+  it('silly personality clues come from SILLY_LINES', () => {
     const { clues } = createGame();
-    const sillyClues = clues.filter(c => SILLY_LINES.includes(c.text));
-    expect(sillyClues.length).toBeGreaterThanOrEqual(2);
+    for (const c of clues.filter(c => c.personality === 'silly')) {
+      expect(SILLY_LINES).toContain(c.text);
+    }
   });
 
   it('exactly 1 guardian angel clue from victim with dead: true', () => {

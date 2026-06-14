@@ -67,12 +67,6 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
     rh.push({ speaker: rand(innocents), text: rand(TMPL.weaponHint)(rhWeapon.name), deductive: false });
   }
 
-  // Silly flavor lines drawn from SILLY_LINES pool — tagged as personality: 'silly'.
-  const sillyPool = shuffle([...innocents, answer.suspect]);
-  const sillyCount = personalities[sillyPool[0].name] === 'silly' ? 2 : 1;
-  for (let i = 0; i < sillyCount; i++) rh.push({ speaker: sillyPool[0], text: rand(SILLY_LINES), deductive: false, personality: 'silly' });
-  if (sillyCount < 2) rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES), deductive: false, personality: 'silly' });
-
   // Ghost/guardian angel flavor clue from victim.
   rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true, deductive: false });
 

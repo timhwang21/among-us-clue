@@ -112,14 +112,11 @@ export function buildExtraHints(answer, trustChain, victim) {
 
 export function createGame() {
   const answer = { suspect: rand(SUSPECTS), room: rand(ROOMS), weapon: rand(WEAPONS) };
-  const extras = shuffle(EXTRAS.slice());
-  const victim = extras[0];
-  const silly  = [extras[1], extras[2]];
-  // Assign personalities to all 5 suspects + victim (6 crewmates).
+  const victim = rand(EXTRAS);
   const personalities = assignPersonalities([...SUSPECTS, victim]);
   const { clues, trustChain } = buildClues(answer, victim, personalities);
   const extraHints = buildExtraHints(answer, trustChain, victim);
-  return { answer, victim, silly, clues, extraHints, trustChain, personalities };
+  return { answer, victim, clues, extraHints, trustChain, personalities };
 }
 
 // Derive which innocents are provably innocent from the vouch edges alone (trust-axiom cascade).
