@@ -190,4 +190,13 @@ export const TMPL = {
   ],
 };
 
+export const WEAPON_ELIM = [
+  (w, e) => `The ${w} ${e} turned up in its usual spot. Untouched. It's not the murder weapon.`,
+  (w, e) => `Checked storage — the ${w} ${e} is exactly where it should be. Ruled out.`,
+  (w, e) => `The ${w} ${e} hasn't moved. It wasn't used.`,
+  (w, e) => `Someone found the ${w} ${e} in its normal place, no signs of use. Not the weapon.`,
+  (w, e) => `Inventory confirms the ${w} ${e} is accounted for and undisturbed.`,
+  (w, e) => `The ${w} ${e} was recovered from storage, clean and unmoved. Eliminate it.`,
+];
+
 export const KILL_RISKS = [0, 10, 20, 30, 40, 100];

@@ -1,4 +1,4 @@
-import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, SILLY_LINES, GUARDIAN_ANGEL_LINES, GUARDIAN_ANGEL_EVIDENCE, TMPL } from './data.js';
+import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, SILLY_LINES, GUARDIAN_ANGEL_LINES, GUARDIAN_ANGEL_EVIDENCE, TMPL, WEAPON_ELIM } from './data.js';
 import { rand, shuffle } from './utils.js';
 
 export function buildClues(answer, victim, silly) {
@@ -45,7 +45,12 @@ export function buildClues(answer, victim, silly) {
   rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES) });
   rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true });
 
-  const accusers = shuffle([A, B, C, D]);
+  const sameVouchedPair = (x, y) =>
+    (x === A && y === B) || (x === B && y === A) ||
+    (x === C && y === D) || (x === D && y === C);
+  let accusers;
+  do { accusers = shuffle([A, B, C, D]); }
+  while (sameVouchedPair(accusers[0], accusers[1]) || sameVouchedPair(accusers[2], accusers[3]));
   rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true });
   rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true });
 
@@ -58,11 +63,8 @@ export function buildExtraHints(answer, trustChain, victim) {
   const hints      = [];
 
   if (nonWeapons.length) {
-    const sw = nonWeapons[0];
-    hints.push({
-      speaker: null,
-      text: `The ${sw.name} ${sw.emoji} was found exactly where it belongs — undisturbed in storage. It wasn't used.`,
-    });
+    const sw = rand(nonWeapons);
+    hints.push({ speaker: null, text: rand(WEAPON_ELIM)(sw.name, sw.emoji) });
   }
 
   hints.push({

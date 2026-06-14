@@ -161,6 +161,33 @@ canvas#stars {
 .opt-item.opt-dead { cursor: default; opacity: 0.35; pointer-events: none; }
 .opt-item.opt-dead:hover { background: rgba(255,255,255,0.04); }
 
+.opt-node {
+  position: absolute; right: -14px; top: 50%; transform: translateY(-50%);
+  width: 28px; height: 28px; border-radius: 50%;
+  background: transparent;
+  cursor: crosshair; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+}
+.opt-node::after {
+  content: ''; display: block;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(100,180,255,0.15); border: 2px solid rgba(100,180,255,0.35);
+  transition: width 0.15s, height 0.15s, background 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+}
+.opt-node:hover::after {
+  width: 24px; height: 24px;
+  background: rgba(100,180,255,0.65); border-color: rgba(100,180,255,0.95);
+}
+.opt-node.node-connected::after {
+  background: rgba(100,180,255,0.45); border-color: rgba(100,180,255,0.8);
+}
+
+#lines-canvas {
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; z-index: 999;
+}
+
 @keyframes angryShake {
   0%,100% { transform: translateX(0); }
   15%      { transform: translateX(-3px) rotate(-4deg); }
@@ -449,6 +476,8 @@ canvas#stars {
   </div>
 </div>
 
+<canvas id="lines-canvas"></canvas>
+
 <!-- ============================================================
      RESULT SCREEN
      ============================================================ -->
@@ -488,6 +517,8 @@ var killRisk       = 0;
 var marks          = { suspects: {}, rooms: {}, weapons: {} };
 var victim         = null;
 var silly          = [];
+var connections    = [];
+var _drag          = { active: false, fromEl: null, fromType: '', fromName: '', curX: 0, curY: 0 };
 
 // ================================================================
 //  SVG HELPERS
@@ -514,6 +545,7 @@ function showScreen(name) {
   document.getElementById(name + '-screen').classList.add('active');
   if (name === 'title') startTitleAnimation();
   else stopTitleAnimation();
+  drawLines();
 }
 
 // ================================================================
@@ -531,6 +563,7 @@ function startGame() {
   clueRevealIdx = 0;
   extraHintIdx  = 0;
   killRisk      = 0;
+  connections   = [];
 
   fillSel('acc-suspect', SUSPECTS, function(s){ return s.name; }, function(s){ return s.name; });
   fillSel('acc-room',    ROOMS,    function(r){ return r.name; }, function(r){ return r.emoji + ' ' + r.name; });
@@ -725,18 +758,9 @@ function renderBoard() {
     return '<div class="opt-item ' + stateClass + '" onclick="cycleMark(\'suspects\',\'' + s.name + '\')">'
       + '<div class="crew-icon">' + crewSVG(s.color, s.dark, 32) + '</div>'
       + '<span class="opt-label" style="color:' + s.color + '">' + s.name + '</span>'
-      + badge + '</div>';
-  }).join('');
-
-  var sillyHTML = silly.map(function(s) {
-    var st = marks.suspects[s.name] || 0;
-    var sc = st === 1 ? 'state-safe' : st === 2 ? 'state-suspicious' : '';
-    var sb = st === 1 ? '<span class="mark-badge mark-safe">✓</span>'
-      : st === 2 ? '<span class="mark-badge mark-flag">🚩</span>' : '';
-    return '<div class="opt-item ' + sc + '" onclick="cycleMark(\'suspects\',\'' + s.name + '\')">'
-      + '<div class="crew-icon">' + crewSVG(s.color, s.dark, 32) + '</div>'
-      + '<span class="opt-label" style="color:' + s.color + '">' + s.name + '</span>'
-      + sb + '</div>';
+      + badge
+      + '<div class="opt-node" data-type="suspects" data-name="' + s.name + '" onclick="event.stopPropagation()"></div>'
+      + '</div>';
   }).join('');
 
   var victimHTML = '<div class="opt-item opt-dead">'
@@ -744,7 +768,7 @@ function renderBoard() {
     + '<span class="opt-label" style="color:' + victim.color + '">' + victim.name + '</span>'
     + '<span class="mark-badge">💀</span></div>';
 
-  el.innerHTML = suspectHTML + sillyHTML + victimHTML;
+  el.innerHTML = suspectHTML + victimHTML;
   renderList('rooms-list', ROOMS, 'rooms', function(r){
     return '<span class="opt-icon">' + r.emoji + '</span>'
          + '<span class="opt-label">' + r.name + '</span>';
@@ -753,6 +777,8 @@ function renderBoard() {
     return '<span class="opt-icon">' + w.emoji + '</span>'
          + '<span class="opt-label">' + w.name + '</span>';
   });
+  updateNodeConnectedState();
+  drawLines();
 }
 
 function renderList(containerId, items, type, innerFn) {
@@ -766,8 +792,121 @@ function renderList(containerId, items, type, innerFn) {
         ? '<span class="mark-badge mark-flag">🚩</span>'
         : '';
     return '<div class="opt-item ' + stateClass + '" onclick="cycleMark(\'' + type + '\',\'' + item.name + '\')">'
-      + innerFn(item) + badge + '</div>';
+      + innerFn(item) + badge
+      + '<div class="opt-node" data-type="' + type + '" data-name="' + item.name + '" onclick="event.stopPropagation()"></div>'
+      + '</div>';
   }).join('');
+}
+
+// ================================================================
+//  LINE DRAWING (drag-and-drop connections between board items)
+// ================================================================
+function initNodeDrag() {
+  ['suspects-list', 'rooms-list', 'weapons-list'].forEach(function(id) {
+    document.getElementById(id).addEventListener('mousedown', function(e) {
+      var node = e.target.closest ? e.target.closest('.opt-node') : null;
+      if (!node) return;
+      e.preventDefault();
+      e.stopPropagation();
+      _drag.active   = true;
+      _drag.fromEl   = node;
+      _drag.fromType = node.dataset.type;
+      _drag.fromName = node.dataset.name;
+      _drag.curX     = e.clientX;
+      _drag.curY     = e.clientY;
+      document.addEventListener('mousemove', onNodeDragMove);
+      document.addEventListener('mouseup',   onNodeDragEnd);
+    });
+  });
+}
+
+function onNodeDragMove(e) {
+  if (!_drag.active) return;
+  _drag.curX = e.clientX;
+  _drag.curY = e.clientY;
+  drawLines();
+}
+
+function onNodeDragEnd(e) {
+  if (!_drag.active) return;
+  document.removeEventListener('mousemove', onNodeDragMove);
+  document.removeEventListener('mouseup',   onNodeDragEnd);
+
+  var el     = document.elementFromPoint(e.clientX, e.clientY);
+  var toNode = el ? el.closest('.opt-node') : null;
+
+  if (toNode && toNode !== _drag.fromEl && toNode.dataset.type !== _drag.fromType) {
+    var toType = toNode.dataset.type, toName = toNode.dataset.name;
+    var ft = _drag.fromType, fn = _drag.fromName;
+    var existIdx = -1;
+    for (var i = 0; i < connections.length; i++) {
+      var c = connections[i];
+      if ((c.from.type === ft && c.from.name === fn && c.to.type === toType && c.to.name === toName) ||
+          (c.from.type === toType && c.from.name === toName && c.to.type === ft && c.to.name === fn)) {
+        existIdx = i; break;
+      }
+    }
+    if (existIdx >= 0) connections.splice(existIdx, 1);
+    else connections.push({ from: { type: ft, name: fn }, to: { type: toType, name: toName } });
+  } else if (!toNode) {
+    var ft2 = _drag.fromType, fn2 = _drag.fromName;
+    connections = connections.filter(function(c) {
+      return !((c.from.type === ft2 && c.from.name === fn2) || (c.to.type === ft2 && c.to.name === fn2));
+    });
+  }
+
+  _drag.active = false;
+  _drag.fromEl = null;
+  updateNodeConnectedState();
+  drawLines();
+}
+
+function updateNodeConnectedState() {
+  document.querySelectorAll('.opt-node').forEach(function(node) {
+    var t = node.dataset.type, n = node.dataset.name;
+    var connected = connections.some(function(c) {
+      return (c.from.type === t && c.from.name === n) || (c.to.type === t && c.to.name === n);
+    });
+    node.classList.toggle('node-connected', connected);
+  });
+}
+
+function drawLines() {
+  var canvas = document.getElementById('lines-canvas');
+  if (!canvas) return;
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  var ctx = canvas.getContext('2d');
+
+  if (!document.getElementById('game-screen').classList.contains('active')) return;
+
+  connections.forEach(function(conn) {
+    var fSel = '.opt-node[data-type="' + conn.from.type + '"][data-name="' + conn.from.name + '"]';
+    var tSel = '.opt-node[data-type="' + conn.to.type   + '"][data-name="' + conn.to.name   + '"]';
+    var fNode = document.querySelector(fSel);
+    var tNode = document.querySelector(tSel);
+    if (!fNode || !tNode) return;
+    var fr = fNode.getBoundingClientRect(), tr = tNode.getBoundingClientRect();
+    drawBezier(ctx, fr.left + fr.width/2, fr.top + fr.height/2,
+                    tr.left + tr.width/2, tr.top + tr.height/2,
+                    'rgba(136,204,255,0.75)', 2);
+  });
+
+  if (_drag.active && _drag.fromEl) {
+    var fr = _drag.fromEl.getBoundingClientRect();
+    drawBezier(ctx, fr.left + fr.width/2, fr.top + fr.height/2,
+                    _drag.curX, _drag.curY, 'rgba(136,204,255,0.38)', 1.5);
+  }
+}
+
+function drawBezier(ctx, x1, y1, x2, y2, color, lw) {
+  var mx = (x1 + x2) / 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.bezierCurveTo(mx, y1, mx, y2, x2, y2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = lw;
+  ctx.stroke();
 }
 
 // ================================================================
@@ -1008,10 +1147,9 @@ function stopTitleAnimation() {
 // ================================================================
 //  INIT
 // ================================================================
-document.getElementById('title-crew').innerHTML =
-  SUSPECTS.concat(EXTRAS).map(s => crewSVG(s.color, s.dark, 58)).join('');
-
 Object.assign(window, { startGame, submitAccusation, getExtraHint, cycleMark, cycleClue, showScreen, downloadLog });
+initNodeDrag();
+window.addEventListener('resize', drawLines);
 startTitleAnimation();
 </script>
 </body>
