@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Among Us: Mystery on the Skeld 🔍</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0b0b1f;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 18px;
+  min-height: 100vh;
+  background-image: radial-gradient(ellipse at top, #1a1a4e 0%, #0b0b1f 70%);
+  overflow-x: hidden;
+}
+
+canvas#stars {
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; z-index: 0;
+}
+
+.screen {
+  display: none; position: relative; z-index: 1;
+  padding: 20px; min-height: 100vh;
+}
+.screen.active { display: flex; flex-direction: column; align-items: center; }
+
+/* =========== TITLE =========== */
+#title-screen { justify-content: center; text-align: center; gap: 16px; }
+
+.title-logo {
+  font-family: 'Orbitron', sans-serif; font-weight: 900;
+  line-height: 1.1; font-size: clamp(2em, 6vw, 3.8em);
+}
+.title-red   { color: #c51111; text-shadow: 0 0 30px rgba(197,17,17,0.8); }
+.title-white { color: #fff;    text-shadow: 0 0 15px rgba(255,255,255,0.5); }
+
+.subtitle { color: #8888aa; font-size: 1.05em; max-width: 440px; line-height: 1.7; }
+
+.crewmates-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+.how-to-play {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; padding: 18px 24px; max-width: 460px;
+  text-align: left; font-size: 0.96em; color: #9999bb; line-height: 2.1;
+}
+.how-to-play > strong:first-child { color: #88ccff; display: block; margin-bottom: 2px; }
+.how-to-play strong { color: #88ccff; }
+.how-to-play .warn { color: #ffaa00; font-weight: 800; }
+
+/* =========== BUTTONS =========== */
+.btn {
+  font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.95em;
+  padding: 14px 30px; border: none; border-radius: 50px; cursor: pointer;
+  transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #c51111, #ff3333); color: white;
+  box-shadow: 0 4px 20px rgba(197,17,17,0.5);
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px); box-shadow: 0 6px 28px rgba(197,17,17,0.7);
+}
+.btn-secondary {
+  background: rgba(255,255,255,0.07); color: #88ccff;
+  border: 1px solid rgba(136,204,255,0.3);
+}
+.btn-secondary:hover { background: rgba(136,204,255,0.13); }
+.btn-hint {
+  background: rgba(255,170,0,0.08); color: #ffaa00;
+  border: 1px solid rgba(255,170,0,0.35); font-size: 0.78em; padding: 12px 18px;
+}
+.btn-hint:hover:not(:disabled) {
+  background: rgba(255,170,0,0.16); box-shadow: 0 0 14px rgba(255,170,0,0.3);
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* =========== GAME SCREEN =========== */
+#game-screen { padding: 15px; gap: 12px; align-items: stretch; }
+
+.game-title {
+  font-family: 'Orbitron', sans-serif; font-size: 1.25em; color: #c51111;
+  letter-spacing: 4px; text-shadow: 0 0 15px rgba(197,17,17,0.5); text-align: center;
+}
+
+.mark-legend {
+  display: flex; gap: 18px; justify-content: center;
+  font-size: 0.82em; color: #666; flex-shrink: 0;
+}
+.leg-item { display: flex; align-items: center; gap: 6px; }
+.leg-flag { color: #ffaa00; }
+.leg-safe { color: #44ff88; font-weight: 900; }
+
+/* =========== GAME GRID =========== */
+.game-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr clamp(220px, 26%, 340px);
+  grid-template-rows: auto auto auto;
+  gap: 10px;
+  width: 100%;
+  flex: 1;
+}
+
+.clues-panel-col {
+  grid-column: 4;
+  grid-row: 1 / -1;
+}
+
+.acc-col {
+  background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px; padding: 10px 12px; align-self: start;
+}
+
+.acc-actions {
+  grid-column: 1 / 4;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+
+.acc-warning { color: #ff8800; font-size: 0.82em; width: 100%; }
+.kill-risk-display { font-size: 0.8em; color: #ff8800; font-weight: 700; width: 100%; }
+
+.cat-card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px; padding: 12px;
+}
+
+.cat-title {
+  font-family: 'Orbitron', sans-serif; font-size: 0.7em; letter-spacing: 3px;
+  color: #88ccff; margin-bottom: 10px; text-align: center;
+}
+
+.opt-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+  margin-bottom: 6px; border-radius: 9px; background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07); position: relative; min-height: 44px;
+  cursor: pointer; user-select: none;
+  transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+}
+.opt-item:hover { background: rgba(255,255,255,0.09); }
+.opt-item:active { transform: scale(0.97); }
+.opt-label { font-size: 0.92em; font-weight: 700; flex: 1; }
+.opt-icon  { font-size: 1.45em; width: 30px; text-align: center; flex-shrink: 0; }
+.crew-icon { width: 32px; height: 42px; flex-shrink: 0; display: flex; align-items: center; }
+
+.opt-item.state-suspicious { border-color: rgba(255,170,0,0.55); background: rgba(255,170,0,0.09); }
+.opt-item.state-suspicious:hover { background: rgba(255,170,0,0.15); }
+.opt-item.state-safe { opacity: 0.38; border-color: rgba(68,255,136,0.2); background: rgba(68,255,136,0.04); }
+.opt-item.state-safe:hover { opacity: 0.55; }
+
+.mark-badge { position: absolute; right: 9px; font-size: 1.05em; line-height: 1; }
+.mark-flag { color: #ffaa00; }
+.mark-safe { color: #44ff88; font-weight: 900; font-size: 1.2em; }
+
+.opt-item.opt-dead { cursor: default; opacity: 0.35; pointer-events: none; }
+.opt-item.opt-dead:hover { background: rgba(255,255,255,0.04); }
+
+@keyframes angryShake {
+  0%,100% { transform: translateX(0); }
+  15%      { transform: translateX(-3px) rotate(-4deg); }
+  30%      { transform: translateX(3px) rotate(4deg); }
+  45%      { transform: translateX(-3px) rotate(-3deg); }
+  60%      { transform: translateX(2px) rotate(3deg); }
+  75%      { transform: translateX(-2px) rotate(-2deg); }
+  90%      { transform: translateX(1px); }
+}
+.clue-crew-icon.angry { animation: angryShake 0.6s ease-in-out infinite; }
+
+/* =========== CLUES PANEL =========== */
+.clues-panel {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.09); border-radius: 14px;
+  display: flex; flex-direction: column; max-height: calc(100vh - 140px);
+  position: sticky; top: 20px;
+}
+
+.clues-panel-header {
+  font-family: 'Orbitron', sans-serif; font-size: 0.7em; letter-spacing: 3px;
+  color: #88ccff; padding: 13px 14px 10px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0; background: rgba(13,13,40,0.97); border-radius: 14px 14px 0 0;
+}
+
+.clues-scroll { overflow-y: auto; flex: 1; padding: 4px 0; }
+.clues-scroll::-webkit-scrollbar { width: 4px; }
+.clues-scroll::-webkit-scrollbar-track { background: transparent; }
+.clues-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+.clue-item {
+  display: flex; gap: 10px; padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.86em; line-height: 1.5; align-items: flex-start;
+  cursor: pointer; user-select: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+.clue-item:hover { background: rgba(255,255,255,0.04); }
+.clue-item:last-child { border-bottom: none; }
+.clue-item.state-suspicious { background: rgba(255,170,0,0.08); border-left: 3px solid rgba(255,170,0,0.5); padding-left: 11px; }
+.clue-item.state-suspicious:hover { background: rgba(255,170,0,0.13); }
+.clue-item.state-safe { opacity: 0.38; }
+.clue-item.state-safe:hover { opacity: 0.55; }
+.clue-mark { flex-shrink: 0; font-size: 0.9em; align-self: center; }
+.clue-crew-icon { display: inline-block; vertical-align: middle; margin-right: 4px; line-height: 0; }
+
+.clue-num {
+  color: #444; font-size: 0.78em; flex-shrink: 0; padding-top: 3px;
+  min-width: 14px; font-weight: 700;
+}
+
+.clue-body { flex: 1; min-width: 0; }
+.clue-speaker { font-weight: 800; font-size: 0.88em; margin-bottom: 2px; }
+.clue-speech { color: #c0ccdd; font-style: italic; display: block; }
+
+.clues-divider {
+  padding: 8px 14px 6px; font-family: 'Orbitron', sans-serif;
+  font-size: 0.62em; color: #ffaa00; letter-spacing: 2px;
+  border-top: 1px solid rgba(255,170,0,0.2); background: rgba(255,170,0,0.03);
+  flex-shrink: 0;
+}
+
+.extra-hint-item { background: rgba(255,170,0,0.05); }
+.extra-hint-label {
+  font-family: 'Orbitron', sans-serif; font-size: 0.62em; letter-spacing: 1px;
+  color: #cc8800; margin-bottom: 3px; display: block;
+}
+
+.fgroup { margin-bottom: 0; }
+.fgroup label { display: block; color: #88ccff; font-weight: 800; margin-bottom: 5px; font-size: 0.78em; letter-spacing: 1px; }
+.fgroup select {
+  width: 100%; padding: 9px 12px; background: rgba(255,255,255,0.06); color: white;
+  border: 1px solid rgba(255,255,255,0.18); border-radius: 9px; font-size: 0.92em;
+  font-family: 'Nunito', sans-serif; font-weight: 700; cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2388ccff' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.fgroup select option { background: #1a1a35; }
+
+/* =========== RESULT SCREEN =========== */
+#result-screen { justify-content: center; text-align: center; gap: 18px; padding-top: 30px; }
+
+.result-badge { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(1.6em, 5vw, 2.8em); }
+.badge-win  { color: #44ff88; text-shadow: 0 0 30px rgba(68,255,136,0.8); }
+.badge-lose { color: #ff4444; text-shadow: 0 0 30px rgba(255,68,68,0.8); }
+
+.result-card {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 16px; padding: 24px 28px; max-width: 460px; font-size: 1.05em;
+  color: #bbb; line-height: 1.7;
+}
+
+.ans-reveal {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  flex-wrap: wrap; margin-top: 16px; padding: 14px;
+  background: rgba(255,255,255,0.06); border-radius: 12px;
+  font-size: 1.1em; font-weight: 800; color: white;
+}
+
+/* =========== CLUE REVEAL =========== */
+@keyframes clueIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.clue-reveal { animation: clueIn 0.25s ease-out both; }
+
+/* =========== EJECT =========== */
+@keyframes eject {
+  0%   { transform: scale(1)   rotate(0deg);    opacity: 1; }
+  100% { transform: scale(0)   rotate(1080deg); opacity: 0; }
+}
+.eject-spin {
+  display: inline-block;
+  animation: eject 3s linear forwards;
+  transform-origin: center;
+}
+
+/* =========== SHAKE =========== */
+@keyframes shake {
+  0%,100% { transform: translate(0,0) rotate(0deg); }
+  5%  { transform: translate(-18px, -8px) rotate(-4deg); }
+  10% { transform: translate(20px,  10px) rotate( 5deg); }
+  15% { transform: translate(-22px,  5px) rotate(-6deg); }
+  20% { transform: translate(18px, -12px) rotate( 4deg); }
+  25% { transform: translate(-14px, 14px) rotate(-5deg); }
+  30% { transform: translate(22px,  -6px) rotate( 6deg); }
+  35% { transform: translate(-20px,  8px) rotate(-4deg); }
+  40% { transform: translate(16px,  12px) rotate( 5deg); }
+  45% { transform: translate(-18px, -10px) rotate(-6deg); }
+  50% { transform: translate(20px,   6px) rotate( 4deg); }
+  55% { transform: translate(-12px, 14px) rotate(-3deg); }
+  60% { transform: translate(14px,  -8px) rotate( 5deg); }
+  65% { transform: translate(-16px,  6px) rotate(-4deg); }
+  70% { transform: translate(12px,  10px) rotate( 3deg); }
+  75% { transform: translate(-10px, -6px) rotate(-3deg); }
+  80% { transform: translate( 8px,   8px) rotate( 2deg); }
+  85% { transform: translate( -6px, -4px) rotate(-2deg); }
+  90% { transform: translate( 4px,   4px) rotate( 1deg); }
+  95% { transform: translate( -2px, -2px) rotate(-1deg); }
+}
+.screen-shake { animation: shake 1s ease-out forwards; }
+
+/* =========== CONFETTI =========== */
+.confetti {
+  position: fixed; width: 10px; height: 10px; border-radius: 2px;
+  pointer-events: none; z-index: 200; animation: fall linear forwards;
+}
+@keyframes fall {
+  0%   { transform: translateY(-60px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(110vh) rotate(600deg); opacity: 0; }
+}
+
+/* =========== RESPONSIVE =========== */
+@media (max-width: 720px) {
+  .game-grid { grid-template-columns: 1fr; }
+  .clues-panel-col { grid-column: 1; grid-row: auto; }
+  .acc-actions { grid-column: 1; }
+  .clues-panel { max-height: 280px; position: static; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<!-- ============================================================
+     TITLE SCREEN
+     ============================================================ -->
+<div id="title-screen" class="screen active">
+  <div class="title-logo">
+    <div class="title-red">AMONG US</div>
+    <div class="title-white">🔍 MYSTERY 🔍</div>
+  </div>
+
+  <div class="subtitle">
+    A crewmate has been murdered aboard the Skeld!<br>
+    Can YOU figure out who did it?
+  </div>
+
+  <div class="crewmates-row" id="title-crew"></div>
+
+  <button class="btn btn-primary" onclick="startGame()" style="font-size:1.1em;padding:16px 44px">
+    🚀 Start Investigation
+  </button>
+
+  <div class="how-to-play">
+    <strong>How to Play:</strong>
+    🔍 Press <strong>Reveal Evidence</strong> to uncover clues one by one<br>
+    🚩 Click a name to mark it as <em>suspicious</em> or <em>safe</em><br>
+    🎯 Make your accusation when you know the answer!<br>
+    🆘 Once all evidence is revealed, extra hints are available — but risky...<br>
+    <span class="warn">⚠️ Warning: Not all the evidence may be true! The impostor lies!</span>
+  </div>
+</div>
+
+<!-- ============================================================
+     GAME SCREEN
+     ============================================================ -->
+<div id="game-screen" class="screen">
+  <div class="game-title">🔍 INVESTIGATION</div>
+
+  <div class="mark-legend">
+    <span class="leg-item"><span class="leg-safe">✓</span> Innocent / Ruled out</span>
+    <span class="leg-item"><span class="leg-flag">🚩</span> Suspicious</span>
+    <span class="leg-item" style="color:#444">Click again to clear</span>
+  </div>
+
+  <div class="game-grid">
+    <!-- Row 1: category boards -->
+    <div class="cat-card">
+      <div class="cat-title">🧑‍🚀 SUSPECTS</div>
+      <div id="suspects-list"></div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-title">🚪 ROOMS</div>
+      <div id="rooms-list"></div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-title">🗡️ WEAPONS</div>
+      <div id="weapons-list"></div>
+    </div>
+
+    <!-- Evidence log: spans all rows -->
+    <div class="clues-panel-col">
+      <div class="clues-panel">
+        <div class="clues-panel-header">📋 EVIDENCE LOG</div>
+        <div class="clues-scroll">
+          <div id="clues-list"></div>
+          <div id="extra-hints-section" style="display:none">
+            <div class="clues-divider">🆘 EXTRA HINTS</div>
+            <div id="extra-hints-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: accusation selects, one per column -->
+    <div class="acc-col">
+      <div class="fgroup">
+        <label>🧑‍🚀 YOUR SUSPECT</label>
+        <select id="acc-suspect"><option value="">— Who? —</option></select>
+      </div>
+    </div>
+    <div class="acc-col">
+      <div class="fgroup">
+        <label>🚪 YOUR ROOM</label>
+        <select id="acc-room"><option value="">— Where? —</option></select>
+      </div>
+    </div>
+    <div class="acc-col">
+      <div class="fgroup">
+        <label>🗡️ YOUR WEAPON</label>
+        <select id="acc-weapon"><option value="">— With what? —</option></select>
+      </div>
+    </div>
+
+    <!-- Row 3: action bar spans first 3 columns -->
+    <div class="acc-actions">
+      <button class="btn btn-primary" onclick="submitAccusation()">🚨 Accuse!</button>
+      <button class="btn btn-hint" id="hint-btn" onclick="getExtraHint()">🆘 Get Hint (but 10% chance impostor strikes!)</button>
+      <div class="kill-risk-display" id="kill-display"></div>
+      <div class="acc-warning" id="acc-kill-warning"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     RESULT SCREEN
+     ============================================================ -->
+<div id="result-screen" class="screen">
+  <div class="result-badge" id="result-badge"></div>
+  <div class="result-card" id="result-card"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="startGame()">🔄 Play Again</button>
+    <button class="btn btn-secondary" onclick="showScreen('title')">🏠 Main Menu</button>
+    <button class="btn btn-secondary" onclick="downloadLog()">📥 Download Log</button>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  DATA
+// ================================================================
+var SUSPECTS = [
+  { name: 'Red',    color: '#c51111', dark: '#8a0a0a' },
+  { name: 'Blue',   color: '#1538d1', dark: '#0b1a8a' },
+  { name: 'Green',  color: '#11802b', dark: '#0a5a1d' },
+  { name: 'Purple', color: '#7b2fbe', dark: '#4e1a85' },
+  { name: 'Yellow', color: '#c8b800', dark: '#8a7d06' },
+];
+
+// Extra crewmates — never the impostor. Two are dealt each game: one victim, one silly.
+var EXTRAS = [
+  { name: 'Orange', color: '#f07d0c', dark: '#a85208' },
+  { name: 'White',  color: '#d6e0f0', dark: '#8a96a8' },
+  { name: 'Black',  color: '#3d3d3d', dark: '#1a1a1a' },
+  { name: 'Pink',   color: '#ee54bb', dark: '#a82e80' },
+  { name: 'Tan',    color: '#c29b6a', dark: '#8a6a3f' },
+  { name: 'Lime',   color: '#4cff50', dark: '#29a82d' },
+  { name: 'Maroon', color: '#6b2737', dark: '#3d1016' },
+  { name: 'Coral',  color: '#ec7578', dark: '#a83a3c' },
+];
+
+var victim = null;  // set by startGame()
+var silly  = [];    // set by startGame() — two crewmates
+
+var SILLY_LINES = [
+  '"I was just eating my spaghetti. Does no one care about my spaghetti?"',
+  '"I think the vents are haunted. Unrelated to the murder, I just wanted someone to know."',
+  '"My tasks were so hard today. Admin? More like BADmin. Anyway."',
+  '"I saw something weird but I got distracted by a button and pressed it for like ten minutes."',
+  '"Not to be dramatic but I\'ve been having a really tough week, you know?"',
+  '"I feel like nobody ever listens to me at these meetings. Like, ever."',
+  '"I pressed the big red button earlier but I don\'t think that was related."',
+  '"I was in the cafeteria but I wasn\'t really paying attention because I was thinking about soup."',
+  '"Whatever. I don\'t even care who did it. Actually I do care. But whatever."',
+  '"I tried to fix the oxygen but I don\'t know where it is. Still don\'t."',
+];
+
+
+var ROOMS = [
+  { name: 'Cafeteria',      emoji: '🍽️' },
+  { name: 'Electrical',     emoji: '⚡' },
+  { name: 'Navigation',     emoji: '🧭' },
+  { name: 'MedBay',         emoji: '💊' },
+  { name: 'Reactor',        emoji: '⚛️' },
+  { name: 'O2',             emoji: '💨' },
+  { name: 'Security',       emoji: '🔒' },
+  { name: 'Shields',        emoji: '🛡️' },
+];
+
+var WEAPONS = [
+  { name: 'Wrench',           emoji: '🔧' },
+  { name: 'Kitchen Knife',    emoji: '🔪' },
+  { name: 'Stop Sign',        emoji: '🛑' },
+  { name: 'Bone',             emoji: '🦴' },
+  { name: 'Hammer',           emoji: '🔨' },
+  { name: 'Screwdriver',      emoji: '🪛' },
+];
+
+// ================================================================
+//  CLUE TEMPLATES  (speech text only — speaker stored separately)
+// ================================================================
+var TMPL = {
+  // ALIBI — solo first-person, no partner named
+  alibi: [
+    function(r){ return '"I was running diagnostics in ' + r + '. I never left."'; },
+    function(r){ return '"I was doing repairs in ' + r + ' when the alarm went off."'; },
+    function(r){ return '"I was fixing the wiring in ' + r + ' the whole time."'; },
+    function(r){ return '"I was in ' + r + '. I didn\'t go anywhere near the incident."'; },
+    function(r){ return '"I spent the entire time working in ' + r + '. Didn\'t move once."'; },
+    function(r){ return '"My tasks were all in ' + r + '. I was there until the meeting was called."'; },
+    function(r){ return '"I was calibrating equipment in ' + r + '. Boring but I was definitely there."'; },
+  ],
+  // BACKING UP — "I can confirm X was in Y" (could be impostor attaching to innocent)
+  backing: [
+    function(o, r){ return '"I can confirm ' + o + ' was in ' + r + '. I saw them there."'; },
+    function(o, r){ return '"' + o + ' was in ' + r + ' — I walked right past them."'; },
+    function(o, r){ return '"I saw ' + o + ' working in ' + r + '. They didn\'t go anywhere."'; },
+    function(o, r){ return '"' + o + ' was definitely in ' + r + ' when it happened."'; },
+    function(o, r){ return '"I passed through ' + r + ' and ' + o + ' was there doing tasks."'; },
+    function(o, r){ return '"' + o + '? Yeah, I saw them in ' + r + '. Not sure for how long though."'; },
+    function(o, r){ return '"I noticed ' + o + ' in ' + r + ' earlier. They looked busy."'; },
+  ],
+  // KILLER LIE — false alibi
+  killerLie: [
+    function(r){ return '"I was in ' + r + ' doing tasks the whole time. I swear I didn\'t do anything wrong!"'; },
+    function(r){ return '"Check ' + r + ' — that\'s where I was. I have absolutely nothing to hide!"'; },
+    function(r){ return '"I was doing repairs in ' + r + ' when the alarm went off. I\'m completely innocent!"'; },
+    function(r){ return '"Ask anyone — I was in ' + r + ' the whole time, just doing my job."'; },
+    function(r){ return '"I never left ' + r + '. You can check the logs if you want."'; },
+    function(r){ return '"My entire shift was spent in ' + r + '. I don\'t know why anyone would suspect me."'; },
+  ],
+  // ACCUSATION — direct, naming the liar (used in extra hints)
+  accusation: [
+    function(k, r){ return '"' + k + ' is lying! I was in ' + r + ' the whole time and they were NEVER there!"'; },
+    function(k, r){ return '"' + k + ' was NOT in ' + r + '. I was there and I never saw them. They\'re making it up!"'; },
+    function(k, r){ return '"I don\'t care what ' + k + ' told you — they were not in ' + r + '. I would have seen them."'; },
+    function(k, r){ return '"' + k + ' is lying about being in ' + r + '. I never left that room and they weren\'t there."'; },
+    function(k, r){ return '"' + k + ' claims they were in ' + r + '? That\'s impossible. I was there the entire time."'; },
+  ],
+  // INFORMATIONAL — murder room
+  roomHint: [
+    function(r){ return '"I found the body near ' + r + '! I panicked and called the emergency meeting immediately!"'; },
+    function(r){ return '"I heard a horrible crash from ' + r + ' and then the lights cut out. Something happened in there."'; },
+    function(r){ return '"I walked past ' + r + ' and the door was forced open. I saw the scene and ran to call a meeting!"'; },
+    function(r){ return '"The body was just outside ' + r + '. I almost didn\'t see it in the dark."'; },
+    function(r){ return '"I stumbled on the scene near ' + r + ' and immediately hit the emergency button."'; },
+  ],
+  roomCorr: [
+    function(r){ return '"I was near ' + r + ' when I heard a loud bang. I didn\'t stop to look."'; },
+    function(r){ return '"The lights were flickering near ' + r + ' right before the alarm went off."'; },
+    function(r){ return '"I saw someone sprinting away from ' + r + ' just before the emergency meeting was called."'; },
+    function(r){ return '"There was some kind of commotion near ' + r + ' earlier. I figured it was just equipment."'; },
+    function(r){ return '"I noticed the door to ' + r + ' was left wide open. That\'s unusual."'; },
+  ],
+  // INFORMATIONAL — murder weapon
+  weaponHint: [
+    function(w){ return '"The ' + w + ' was missing from where it\'s always stored! Someone took it before this happened."'; },
+    function(w){ return '"I checked storage earlier and the ' + w + ' was just gone. That\'s never happened before."'; },
+    function(w){ return '"I noticed the ' + w + ' wasn\'t in its place. I thought it was weird — now I know why."'; },
+    function(w){ return '"Someone moved the ' + w + '. It wasn\'t where we keep it."'; },
+    function(w){ return '"The ' + w + ' is unaccounted for. I looked everywhere and couldn\'t find it."'; },
+  ],
+  weaponCorr: [
+    function(w, r){ return '"I noticed a ' + w + ' near ' + r + ' earlier. I don\'t remember it being there before."'; },
+    function(w, r){ return '"There was a ' + w + ' on the floor near ' + r + '. I just walked past it — didn\'t think much of it."'; },
+    function(w, r){ return '"I saw a ' + w + ' sitting near ' + r + ' at some point. Not sure if that\'s relevant."'; },
+    function(w, r){ return '"A ' + w + ' was near the entrance to ' + r + '. Could be nothing, but it caught my eye."'; },
+    function(w, r){ return '"Someone left a ' + w + ' near ' + r + '. I almost tripped over it."'; },
+    function(w, r){ return '"I spotted a ' + w + ' just outside ' + r + ' earlier today. Odd place for it."'; },
+  ],
+  // HYSTERICAL ACCUSATIONS — innocents wildly pointing fingers, pure noise
+  rhAccuse: [
+    function(a, b){ return '"It was ' + b + '!! I KNOW it was ' + b + '!! Don\'t ask me how I know, I just know!!"'; },
+    function(a, b){ return '"' + b + ' did it. I\'m not arguing about this."'; },
+    function(a, b){ return '"I am BEGGING everyone to look at ' + b + '. BEGGING."'; },
+    function(a, b){ return '"' + b + '. That\'s it. That\'s my whole statement. ' + b + '."'; },
+    function(a, b){ return '"I\'ve been saying it since day one: ' + b + '. Nobody listened. Well? NOW will you listen?!"'; },
+    function(a, b){ return '"Something about ' + b + ' has always been off and I will die on this hill."'; },
+    function(a, b){ return '"You want to know who did it? ' + b + '. You\'re welcome."'; },
+    function(a, b){ return '"I don\'t have evidence. I don\'t need evidence. It was ' + b + '."'; },
+    function(a, b){ return '"' + b + ' has shifty eyes. That\'s not an accusation, that\'s a fact. But also an accusation."'; },
+    function(a, b){ return '"I can\'t prove it but ' + b + ' is ABSOLUTELY responsible and I\'ll stake my life on it."'; },
+  ],
+  // RED HERRINGS — true but misleading
+  rhRoom: [
+    function(n, r){ return '"I saw ' + n + ' in ' + r + ' earlier. They seemed totally normal."'; },
+    function(n, r){ return '"' + n + ' was near ' + r + ' before everything happened. Probably nothing."'; },
+    function(n, r){ return '"I passed through ' + r + ' and bumped into ' + n + '. They looked a little nervous, honestly."'; },
+    function(n, r){ return '"' + n + ' was hanging around outside ' + r + ' for a while. I didn\'t think anything of it."'; },
+    function(n, r){ return '"I spotted ' + n + ' heading toward ' + r + ' earlier. No idea if they went in."'; },
+  ],
+  rhWeapon: [
+    function(n, w){ return '"' + n + ' had the ' + w + ' last time I saw it. They were using it for repairs, I think."'; },
+    function(n, w){ return '"I saw ' + n + ' put the ' + w + ' back in storage earlier. At least, I thought that\'s what they did."'; },
+    function(n, w){ return '"The ' + w + ' was near ' + n + '\'s workstation earlier today."'; },
+    function(n, w){ return '"' + n + ' was carrying a ' + w + ' earlier. Said they needed it for a task."'; },
+  ],
+  rhBehavior: [
+    function(n){ return '"' + n + ' was acting really weird and jumpy before the alarm."'; },
+    function(n){ return '"I noticed ' + n + ' looking around nervously in the hallway earlier."'; },
+    function(n){ return '"' + n + ' was avoiding eye contact with everyone before the meeting."'; },
+    function(n){ return '"' + n + ' kept checking over their shoulder when I walked past. Strange."'; },
+    function(n){ return '"' + n + ' seemed distracted and on edge before the alarm. Probably nothing."'; },
+  ],
+  // KILLER DEFLECTION — impostor tries to frame an innocent
+  killerDeflect: [
+    function(n){ return '"Why is everyone looking at me?? Look at ' + n + '! They were acting so suspicious before all this!"'; },
+    function(n){ return '"Honestly? I think ' + n + ' did it. I saw them near where it happened right before the alarm went off."'; },
+    function(n){ return '"I\'m telling you, it\'s ' + n + '. I saw them with the weapon earlier — just ask around!"'; },
+    function(n){ return '"Nobody\'s talking about ' + n + ' but they should be. I saw some very strange things coming from them."'; },
+    function(n){ return '"I don\'t want to accuse anyone, but... ' + n + ' was acting really off earlier. I\'d look there first."'; },
+    function(n){ return '"Has anyone else noticed ' + n + ' being weird? Because I have. Just saying."'; },
+    function(n){ return '"I think we\'re looking at the wrong person. ' + n + ' was near the scene. Why isn\'t anyone asking them?"'; },
+  ],
+};
+
+// Kill risk schedule: index = number of extra hints taken
+var KILL_RISKS = [0, 10, 20, 30, 40, 100];
+
+// ================================================================
+//  GAME STATE
+// ================================================================
+var answer         = {};
+var clues          = [];
+var clueMarks      = []; // per-clue mark state (0=none, 1=suspicious, 2=safe)
+var clueRevealIdx  = 0;
+var extraHints     = [];
+var extraHintIdx   = 0;
+var killRisk       = 0;
+var marks          = { suspects: {}, rooms: {}, weapons: {} };
+var trustChain     = {};
+
+// ================================================================
+//  SVG HELPERS
+// ================================================================
+function crewSVG(color, dark, w) {
+  w = w || 50;
+  var h = Math.round(w * 1.3);
+  return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">'
+    + '<rect x="16" y="50" width="53" height="58" rx="15" fill="' + color + '"/>'
+    + '<ellipse cx="43" cy="37" rx="30" ry="27" fill="' + color + '"/>'
+    + '<rect x="20" y="17" width="45" height="28" rx="10" fill="#aaddff" opacity="0.88"/>'
+    + '<ellipse cx="30" cy="27" rx="8" ry="5" fill="white" opacity="0.5"/>'
+    + '<rect x="68" y="54" width="15" height="28" rx="6" fill="' + dark + '"/>'
+    + '<rect x="19" y="102" width="19" height="20" rx="7" fill="' + dark + '"/>'
+    + '<rect x="45" y="102" width="19" height="20" rx="7" fill="' + dark + '"/>'
+    + '</svg>';
+}
+
+// ================================================================
+//  SCREEN
+// ================================================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(name + '-screen').classList.add('active');
+}
+
+// ================================================================
+//  UTILITIES
+// ================================================================
+function rand(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+  }
+  return a;
+}
+
+// ================================================================
+//  GAME START
+// ================================================================
+function startGame() {
+  answer        = { suspect: rand(SUSPECTS), room: rand(ROOMS), weapon: rand(WEAPONS) };
+  var extras    = shuffle(EXTRAS.slice());
+  victim        = extras[0];
+  silly         = [extras[1], extras[2]];
+  marks         = { suspects: {}, rooms: {}, weapons: {} };
+  clueMarks     = [];
+  clueRevealIdx = 0;
+  extraHintIdx  = 0;
+  killRisk      = 0;
+  clues         = buildClues();
+  extraHints    = buildExtraHints();
+
+  fillSel('acc-suspect', SUSPECTS, function(s){ return s.name; }, function(s){ return s.name; });
+  fillSel('acc-room',    ROOMS,    function(r){ return r.name; }, function(r){ return r.emoji + ' ' + r.name; });
+  fillSel('acc-weapon',  WEAPONS,  function(w){ return w.name; }, function(w){ return w.emoji + ' ' + w.name; });
+
+  document.getElementById('extra-hints-section').style.display = 'none';
+  document.getElementById('extra-hints-list').innerHTML = '';
+
+  logGame();
+  renderBoard();
+  renderClues();
+  updateHintButton();
+  showScreen('game');
+}
+
+function logGame() {
+  try {
+    var entry = {
+      ts: new Date().toISOString(),
+      answer: { suspect: answer.suspect.name, room: answer.room.name, weapon: answer.weapon.name },
+      victim: victim.name,
+      silly: silly.map(function(s){ return s.name; }),
+      clues: clues.map(function(c){
+        return { speaker: c.speaker.name, text: c.text, accusation: !!c.accusation };
+      }),
+      extraHints: extraHints.map(function(h){
+        return { speaker: h.speaker ? h.speaker.name : null, text: h.text, accusation: !!h.accusation };
+      }),
+    };
+    var log = JSON.parse(localStorage.getItem('gameLog') || '[]');
+    log.push(entry);
+    localStorage.setItem('gameLog', JSON.stringify(log));
+  } catch(e) {}
+}
+
+// Call downloadLog() from the browser console to export the telemetry as a JSON file.
+function downloadLog() {
+  var data = localStorage.getItem('gameLog') || '[]';
+  var blob = new Blob([data], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'game-log.json';
+  a.click();
+}
+
+function fillSel(id, items, valFn, labelFn) {
+  var sel = document.getElementById(id);
+  sel.innerHTML = '<option value="">— Choose —</option>';
+  items.forEach(function(item){
+    var opt = document.createElement('option');
+    opt.value    = valFn(item);
+    opt.textContent = labelFn(item);
+    sel.appendChild(opt);
+  });
+}
+
+// ================================================================
+//  CONSTRAINT-BASED CLUE GENERATION
+//
+//  Alibi chains are ONE-DIRECTIONAL in base clues — A confirms B,
+//  but B's confirmation of A is gated behind a hint. This prevents
+//  the mutual-defense tell ("A says B, B says A → obviously both safe").
+//
+//  Killer gets two statements: a false alibi AND a deflection
+//  accusing an innocent, to muddy the waters.
+//
+//  Direct accusations are fully gated behind hints.
+// ================================================================
+function buildClues() {
+  var innocents        = shuffle(SUSPECTS.filter(function(s){ return s.name !== answer.suspect.name; }));
+  var A = innocents[0], B = innocents[1], C = innocents[2], D = innocents[3];
+
+  var nonMurderRooms   = ROOMS.filter(function(r){ return r.name !== answer.room.name; });
+  var nonMurderWeapons = WEAPONS.filter(function(w){ return w.name !== answer.weapon.name; });
+  var shuffledNMR      = shuffle(nonMurderRooms.slice());
+  var lieRoom          = shuffledNMR[0];
+  var cdRoom           = shuffledNMR[1] || shuffledNMR[0];
+
+  // Store for buildExtraHints
+  trustChain = { A: A, B: B, C: C, D: D, lieRoom: lieRoom, cdRoom: cdRoom };
+
+  var core = [
+    // Chain 1: A claims solo alibi; B backs A (B could be impostor attaching to innocent)
+    { speaker: A, text: rand(TMPL.alibi)(lieRoom.name) },
+    { speaker: B, text: rand(TMPL.backing)(A.name, lieRoom.name) },
+    // Chain 2: C claims solo alibi; D backs C (same ambiguity)
+    { speaker: C, text: rand(TMPL.alibi)(cdRoom.name) },
+    { speaker: D, text: rand(TMPL.backing)(C.name, cdRoom.name) },
+    // Killer's false alibi (claims lieRoom, but A only mentions B — not the killer)
+    { speaker: answer.suspect, text: rand(TMPL.killerLie)(lieRoom.name) },
+    // Killer deflects: accuses an innocent to muddy the waters
+    { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(D.name), accusation: true },
+    // Informational: D noticed something near the murder room (observational, not conclusive)
+    { speaker: D, text: rand(TMPL.roomCorr)(answer.room.name) },
+    // Informational: weapon
+    { speaker: B, text: rand(TMPL.weaponHint)(answer.weapon.name) },
+    { speaker: A, text: rand(TMPL.weaponCorr)(answer.weapon.name, answer.room.name) },
+  ];
+
+  // Red herrings
+  var rhRooms = shuffle(nonMurderRooms.filter(function(r){
+    return r.name !== lieRoom.name && r.name !== cdRoom.name;
+  }));
+  var rh = [];
+
+  // RH1: non-murder weapon spotted near non-murder room (same template as real weapon clue)
+  if (nonMurderWeapons.length && rhRooms.length) {
+    rh.push({ speaker: B, text: rand(TMPL.weaponCorr)(rand(nonMurderWeapons).name, rhRooms[0].name) });
+  }
+  // RH2: innocent had non-murder weapon
+  if (nonMurderWeapons.length > 1) {
+    rh.push({ speaker: C, text: rand(TMPL.rhWeapon)(D.name, nonMurderWeapons[1].name) });
+  }
+  // RH3: innocent spotted in a non-murder room (points suspicion at an innocent)
+  if (rhRooms.length > 1) {
+    rh.push({ speaker: D, text: rand(TMPL.rhRoom)(B.name, rhRooms[1].name) });
+  }
+
+  // Silly crewmates: pure noise
+  rh.push({ speaker: silly[0], text: rand(SILLY_LINES) });
+  rh.push({ speaker: silly[1], text: rand(SILLY_LINES) });
+
+  // Hysterical accusations: innocents wildly pointing fingers (noise, gets angry icon)
+  var accusers = shuffle([A, B, C, D]);
+  rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true });
+  rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true });
+
+  return shuffle(core.concat(rh));
+}
+
+// ================================================================
+//  EXTRA HINTS — ordered from process-of-elimination → direct
+//
+//  Hint 1: weapon elimination (soft, process of elimination)
+//  Hint 2: B confirms A — completes the one-directional alibi chain
+//  Hint 3: direct accusation by A naming the killer
+//  Hint 4: D confirms C — corroborates second alibi chain
+//  Hint 5: thermal sensor — definitively confirms murder room
+// ================================================================
+function buildExtraHints() {
+  var tc         = trustChain;
+  var nonWeapons = WEAPONS.filter(function(w){ return w.name !== answer.weapon.name; });
+
+  var hints = [];
+
+  // 1. Weapon elimination: a non-murder weapon confirmed safe (process of elimination)
+  if (nonWeapons.length) {
+    var sw = nonWeapons[0];
+    hints.push({
+      speaker: null,
+      text: 'The ' + sw.name + ' ' + sw.emoji + ' was found exactly where it belongs — undisturbed in storage. It wasn\'t used.',
+    });
+  }
+
+  // 2. Body found — C names the murder room directly (previously a base clue, now gated)
+  hints.push({
+    speaker: tc.C,
+    text: rand(TMPL.roomHint)(answer.room.name),
+  });
+
+  // 3. A reciprocates — confirms B was also there, completing the mutual alibi and clearing B
+  hints.push({
+    speaker: tc.A,
+    text: rand(TMPL.backing)(tc.B.name, tc.lieRoom.name),
+  });
+
+  // 4. Direct accusation — A names the killer explicitly (angry icon)
+  hints.push({
+    speaker: tc.A,
+    text: rand(TMPL.accusation)(answer.suspect.name, tc.lieRoom.name),
+    accusation: true,
+  });
+
+  // 5. C reciprocates — confirms D was also there, completing the second mutual alibi
+  hints.push({
+    speaker: tc.C,
+    text: rand(TMPL.backing)(tc.D.name, tc.cdRoom.name),
+  });
+
+  return hints;
+}
+
+// ================================================================
+//  HINT BUTTON LOGIC
+// ================================================================
+function getExtraHint() {
+  // Phase 1: still revealing standard evidence — no kill risk
+  if (clueRevealIdx < clues.length) {
+    clueRevealIdx++;
+    renderClues();
+    // Scroll to the new clue
+    var scroll = document.querySelector('.clues-scroll');
+    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+    updateHintButton();
+    return;
+  }
+
+  // Phase 2: all evidence revealed — extra conditional hints with kill risk
+  var nextRisk = KILL_RISKS[Math.min(extraHintIdx + 1, KILL_RISKS.length - 1)];
+
+  if (nextRisk > 0 && Math.random() * 100 < nextRisk) {
+    extraHintIdx++;
+    killRisk = nextRisk;
+    showKilled();
+    return;
+  }
+
+  extraHintIdx++;
+  killRisk = KILL_RISKS[Math.min(extraHintIdx, KILL_RISKS.length - 1)];
+
+  if (extraHintIdx <= extraHints.length) {
+    document.getElementById('extra-hints-section').style.display = 'block';
+    var list = document.getElementById('extra-hints-list');
+    var hint = extraHints[extraHintIdx - 1];
+    var item = document.createElement('div');
+    item.className = 'clue-item extra-hint-item';
+    var speakerHTML = '';
+    if (hint.speaker) {
+      var angryClass = hint.accusation ? ' angry' : '';
+      speakerHTML = '<span class="clue-speaker" style="color:' + hint.speaker.color + '">'
+        + '<span class="clue-crew-icon' + angryClass + '">' + crewSVG(hint.speaker.color, hint.speaker.dark, 18) + '</span>'
+        + hint.speaker.name
+        + '</span>';
+    } else {
+      speakerHTML = '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
+    }
+    item.innerHTML = '<span class="clue-num">' + extraHintIdx + '</span>'
+      + '<div class="clue-body">'
+      + speakerHTML
+      + '<span class="clue-speech">' + hint.text + '</span>'
+      + '</div>';
+    list.appendChild(item);
+    var scroll = item.closest('.clues-scroll');
+    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+  }
+
+  updateHintButton();
+}
+
+function updateHintButton() {
+  var btn     = document.getElementById('hint-btn');
+  var display = document.getElementById('kill-display');
+  var warning = document.getElementById('acc-kill-warning');
+
+  if (clueRevealIdx < clues.length) {
+    // Phase 1: safe reveal mode
+    var remaining = clues.length - clueRevealIdx;
+    btn.disabled    = false;
+    btn.textContent = '🔍 Reveal Evidence (' + remaining + ' left)';
+  } else if (killRisk >= 100) {
+    btn.disabled    = true;
+    btn.textContent = '💀 Impostor will definitely strike (100%)';
+  } else {
+    // Phase 2: extra hints with kill risk
+    var nextRisk = KILL_RISKS[Math.min(extraHintIdx + 1, KILL_RISKS.length - 1)];
+    btn.disabled    = false;
+    btn.textContent = '🆘 Get Hint (but ' + nextRisk + '% chance impostor strikes!)';
+  }
+
+  display.textContent = '';
+  if (warning) warning.textContent = '';
+}
+
+// ================================================================
+//  CLUE PANEL RENDERING
+// ================================================================
+function cycleClue(i) {
+  clueMarks[i] = ((clueMarks[i] || 0) + 1) % 3;
+  renderClues();
+}
+
+function renderClues() {
+  var el = document.getElementById('clues-list');
+  if (clueRevealIdx === 0) {
+    el.innerHTML = '<div style="padding:16px 14px;color:#444;font-size:0.85em;font-style:italic">Press the button below to start revealing evidence...</div>';
+    return;
+  }
+  var MARK_BADGES = ['', '<span class="mark-safe">✓</span>', '<span class="mark-flag">🚩</span>'];
+  var MARK_STATES = ['', 'state-safe', 'state-suspicious'];
+  el.innerHTML = clues.slice(0, clueRevealIdx).map(function(c, i) {
+    var m = clueMarks[i] || 0;
+    var isNew = (i === clueRevealIdx - 1) ? ' clue-reveal' : '';
+    var icon = crewSVG(c.speaker.color, c.speaker.dark, 18);
+    var angryClass = c.accusation ? ' angry' : '';
+    return '<div class="clue-item' + isNew + ' ' + MARK_STATES[m] + '" onclick="cycleClue(' + i + ')">'
+      + '<span class="clue-num">' + (i + 1) + '</span>'
+      + '<div class="clue-body">'
+      + '<span class="clue-speaker" style="color:' + c.speaker.color + '">'
+      + '<span class="clue-crew-icon' + angryClass + '">' + icon + '</span>'
+      + c.speaker.name
+      + '</span>'
+      + '<span class="clue-speech">' + c.text + '</span>'
+      + '</div>'
+      + (m ? '<span class="clue-mark">' + MARK_BADGES[m] + '</span>' : '')
+      + '</div>';
+  }).join('');
+}
+
+// ================================================================
+//  BOARD RENDERING
+// ================================================================
+function cycleMark(type, name) {
+  var cur = marks[type][name] || 0;
+  marks[type][name] = (cur + 1) % 3;
+  renderBoard();
+}
+
+function renderBoard() {
+  var el = document.getElementById('suspects-list');
+  var suspectHTML = SUSPECTS.map(function(s) {
+    var state = marks.suspects[s.name] || 0;
+    var stateClass = state === 1 ? 'state-safe' : state === 2 ? 'state-suspicious' : '';
+    var badge = state === 1 ? '<span class="mark-badge mark-safe">✓</span>'
+      : state === 2 ? '<span class="mark-badge mark-flag">🚩</span>' : '';
+    return '<div class="opt-item ' + stateClass + '" onclick="cycleMark(\'suspects\',\'' + s.name + '\')">'
+      + '<div class="crew-icon">' + crewSVG(s.color, s.dark, 32) + '</div>'
+      + '<span class="opt-label" style="color:' + s.color + '">' + s.name + '</span>'
+      + badge + '</div>';
+  }).join('');
+
+  var sillyHTML = silly.map(function(s) {
+    var st = marks.suspects[s.name] || 0;
+    var sc = st === 1 ? 'state-safe' : st === 2 ? 'state-suspicious' : '';
+    var sb = st === 1 ? '<span class="mark-badge mark-safe">✓</span>'
+      : st === 2 ? '<span class="mark-badge mark-flag">🚩</span>' : '';
+    return '<div class="opt-item ' + sc + '" onclick="cycleMark(\'suspects\',\'' + s.name + '\')">'
+      + '<div class="crew-icon">' + crewSVG(s.color, s.dark, 32) + '</div>'
+      + '<span class="opt-label" style="color:' + s.color + '">' + s.name + '</span>'
+      + sb + '</div>';
+  }).join('');
+
+  var victimHTML = '<div class="opt-item opt-dead">'
+    + '<div class="crew-icon">' + crewSVG(victim.color, victim.dark, 32) + '</div>'
+    + '<span class="opt-label" style="color:' + victim.color + '">' + victim.name + '</span>'
+    + '<span class="mark-badge">💀</span></div>';
+
+  el.innerHTML = suspectHTML + sillyHTML + victimHTML;
+  renderList('rooms-list', ROOMS, 'rooms', function(r){
+    return '<span class="opt-icon">' + r.emoji + '</span>'
+         + '<span class="opt-label">' + r.name + '</span>';
+  });
+  renderList('weapons-list', WEAPONS, 'weapons', function(w){
+    return '<span class="opt-icon">' + w.emoji + '</span>'
+         + '<span class="opt-label">' + w.name + '</span>';
+  });
+}
+
+function renderList(containerId, items, type, innerFn) {
+  var el = document.getElementById(containerId);
+  el.innerHTML = items.map(function(item){
+    var state = marks[type][item.name] || 0;
+    var stateClass = state === 1 ? 'state-safe' : state === 2 ? 'state-suspicious' : '';
+    var badge = state === 1
+      ? '<span class="mark-badge mark-safe">✓</span>'
+      : state === 2
+        ? '<span class="mark-badge mark-flag">🚩</span>'
+        : '';
+    return '<div class="opt-item ' + stateClass + '" onclick="cycleMark(\'' + type + '\',\'' + item.name + '\')">'
+      + innerFn(item) + badge + '</div>';
+  }).join('');
+}
+
+// ================================================================
+//  ACCUSATION
+// ================================================================
+function submitAccusation() {
+  var s = document.getElementById('acc-suspect').value;
+  var r = document.getElementById('acc-room').value;
+  var w = document.getElementById('acc-weapon').value;
+  if (!s || !r || !w) { alert('Choose all three! 🕵️'); return; }
+
+  var correct = s === answer.suspect.name && r === answer.room.name && w === answer.weapon.name;
+  showResult(correct);
+}
+
+// ================================================================
+//  RESULTS
+// ================================================================
+function answerRevealHTML(eject) {
+  var svg = crewSVG(answer.suspect.color, answer.suspect.dark, 56);
+  var crewEl = eject ? '<div class="eject-spin">' + svg + '</div>' : svg;
+  return '<div class="ans-reveal">'
+    + crewEl
+    + '<div style="text-align:left">'
+    + '<span style="color:' + answer.suspect.color + ';font-size:1.15em">' + answer.suspect.name + '</span><br>'
+    + answer.room.emoji   + ' ' + answer.room.name   + '<br>'
+    + answer.weapon.emoji + ' ' + answer.weapon.name
+    + '</div></div>';
+}
+
+function showKilled() {
+  document.getElementById('result-badge').className   = 'result-badge badge-lose';
+  document.getElementById('result-badge').textContent = '💀 THE IMPOSTOR GOT YOU!';
+  document.getElementById('result-card').innerHTML    =
+    '<p>The impostor found you while you were investigating! They struck before you could react.</p>'
+    + '<p style="margin-top:10px">Your killer was:</p>'
+    + answerRevealHTML(false);
+  showScreen('result');
+  triggerShake();
+}
+
+function showResult(correct) {
+  var badge = document.getElementById('result-badge');
+  var card  = document.getElementById('result-card');
+
+  if (correct) {
+    badge.className   = 'result-badge badge-win';
+    badge.textContent = '🎉 YOU SOLVED IT!';
+    card.innerHTML    = '<p>Amazing detective work! The crew is safe thanks to you! 🚀</p>' + answerRevealHTML(true);
+    showScreen('result');
+    spawnConfetti();
+  } else {
+    badge.className   = 'result-badge badge-lose';
+    badge.textContent = '💀 WRONG ACCUSATION!';
+    card.innerHTML    =
+      '<p>The crew voted you out of the airlock... 😔</p>'
+      + '<p style="margin-top:10px">The real culprit was:</p>'
+      + answerRevealHTML(false);
+    showScreen('result');
+    triggerShake();
+  }
+}
+
+function triggerShake() {
+  var el = document.getElementById('result-screen');
+  el.classList.remove('screen-shake');
+  void el.offsetWidth; // force reflow so re-adding the class restarts the animation
+  el.classList.add('screen-shake');
+}
+
+// ================================================================
+//  CONFETTI
+// ================================================================
+function spawnConfetti() {
+  var cols = ['#c51111','#1538d1','#11802b','#7b2fbe','#c8b800','#ff6600','#00ccff','#ff99ee'];
+  for (var i = 0; i < 90; i++) {
+    (function(delay){
+      setTimeout(function(){
+        var el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left             = (Math.random() * 100) + 'vw';
+        el.style.background       = cols[Math.floor(Math.random() * cols.length)];
+        el.style.width            = (7 + Math.random() * 9) + 'px';
+        el.style.height           = (7 + Math.random() * 9) + 'px';
+        el.style.animationDuration = (1.6 + Math.random() * 2.4) + 's';
+        document.body.appendChild(el);
+        setTimeout(function(){ el.remove(); }, 4200);
+      }, delay);
+    })(i * 28);
+  }
+}
+
+// ================================================================
+//  STAR BACKGROUND
+// ================================================================
+(function initStars(){
+  var canvas = document.getElementById('stars');
+  var ctx    = canvas.getContext('2d');
+  var stars  = [];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    stars = [];
+    for (var i = 0; i < 160; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,  y: Math.random() * canvas.height,
+        r: Math.random() * 1.4,           a: 0.2 + Math.random() * 0.7,
+        spd: 0.3 + Math.random() * 0.7,   dir: Math.random() > 0.5 ? 1 : -1,
+        t: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var now = Date.now() / 1000;
+    stars.forEach(function(s){
+      var alpha = s.a + 0.2 * Math.sin(now * s.spd * s.dir + s.t);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,' + Math.max(0, alpha) + ')';
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+
+// ================================================================
+//  INIT
+// ================================================================
+document.getElementById('title-crew').innerHTML =
+  SUSPECTS.concat(EXTRAS)
+    .map(function(s){ return crewSVG(s.color, s.dark, 58); }).join('');
+</script>
+</body>
+</html>
