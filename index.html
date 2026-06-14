@@ -315,6 +315,7 @@ canvas#stars {
 .pers-badge.peacemaker { background: rgba(80,200,120,0.15);  color: #50d870; }
 .pers-badge.salty      { background: rgba(160,120,220,0.15); color: #c090f0; }
 .pers-badge.overconfident { background: rgba(255,160,40,0.15); color: #ffa028; }
+.pers-badge.dead          { background: rgba(140,80,220,0.18); color: #c090f0; }
 .evidence-marker { font-size: 0.85em; margin-left: 5px; }
 
 /* =========== CLUE REVEAL =========== */
@@ -890,10 +891,10 @@ function getExtraHint() {
     const speakerHTML = hint.speaker
       ? (() => {
           const angryClass = hint.accusation ? ' angry' : '';
-          const label = hint.dead ? `👻 ${hint.speaker.name}` : hint.speaker.name;
+          const badge = hint.personality ? `<span class="pers-badge ${hint.personality}">${hint.personality}</span>` : '';
           return `<span class="clue-speaker" style="color:${hint.speaker.color}">`
             + `<span class="clue-crew-icon${angryClass}">${crewSVG(hint.speaker.color, hint.speaker.dark, 18)}</span>`
-            + `${label}</span>`;
+            + hint.speaker.name + badge + '</span>';
         })()
       : '<span class="extra-hint-label">🔍 INVESTIGATION</span>';
     item.innerHTML = `<span class="clue-num">${extraHintIdx}</span>`
@@ -951,13 +952,13 @@ function renderClues() {
     const isNew      = i === clueRevealIdx - 1 ? ' clue-reveal' : '';
     const deadClass  = c.dead ? ' clue-dead' : '';
     const angryClass = c.accusation ? ' angry' : '';
-    const label      = c.dead ? `👻 ${c.speaker.name}` : c.speaker.name;
+    const badge      = c.personality ? `<span class="pers-badge ${c.personality}">${c.personality}</span>` : '';
     return `<div class="clue-item${isNew}${deadClass} ${MARK_STATES[m]}" onclick="cycleClue(${i})">`
       + `<span class="clue-num">${i + 1}</span>`
       + '<div class="clue-body">'
       + `<span class="clue-speaker" style="color:${c.speaker.color}">`
       + `<span class="clue-crew-icon${angryClass}">${crewSVG(c.speaker.color, c.speaker.dark, 18)}</span>`
-      + label + '</span>'
+      + c.speaker.name + badge + '</span>'
       + `<span class="clue-speech">${c.text}</span>`
       + '</div>'
       + (m ? `<span class="clue-mark">${MARK_BADGES[m]}</span>` : '')
@@ -1178,9 +1179,7 @@ function showResult(correct) {
   }
 }
 
-// personality is the per-clue field (only set on clues that came from a personality pool).
-function speakerHTML(c, { angry = false, dead = false, deductive = null, personality = null } = {}) {
-  const label = dead ? `👻 ${c.name}` : c.name;
+function speakerHTML(c, { angry = false, deductive = null, personality = null } = {}) {
   let badge = '';
   if (deductive === true) {
     badge = '<span class="evidence-marker">🔍</span>';
@@ -1189,7 +1188,7 @@ function speakerHTML(c, { angry = false, dead = false, deductive = null, persona
   }
   return `<span class="clue-speaker" style="color:${c.color}">`
     + `<span class="clue-crew-icon${angry ? ' angry' : ''}">${crewSVG(c.color, c.dark, 18)}</span>`
-    + `${label}${badge}</span>`;
+    + `${c.name}${badge}</span>`;
 }
 
 function populateResultLog() {
@@ -1199,7 +1198,7 @@ function populateResultLog() {
     const deadClass = c.dead ? ' clue-dead' : '';
     return `<div class="clue-item${deadClass} ${MARK_STATES[m]}">`
       + `<span class="clue-num">${i + 1}</span>`
-      + `<div class="clue-body">${speakerHTML(c.speaker, { angry: !!c.accusation, dead: !!c.dead, deductive: c.deductive ?? null, personality: c.personality ?? null })}`
+      + `<div class="clue-body">${speakerHTML(c.speaker, { angry: !!c.accusation, deductive: c.deductive ?? null, personality: c.personality ?? null })}`
       + `<span class="clue-speech">${c.text}</span></div></div>`;
   }).join('');
 
@@ -1207,7 +1206,7 @@ function populateResultLog() {
   document.getElementById('result-log-hints-list').innerHTML = extraHints.map((hint, i) => {
     const deadClass = hint.dead ? ' clue-dead' : '';
     const speaker   = hint.speaker
-      ? speakerHTML(hint.speaker, { angry: !!hint.accusation, dead: !!hint.dead })
+      ? speakerHTML(hint.speaker, { angry: !!hint.accusation, personality: hint.personality ?? null })
       : '<span class="extra-hint-label">🔍 INVESTIGATION</span>';
     return `<div class="clue-item extra-hint-item${deadClass}">`
       + `<span class="clue-num">${i + 1}</span>`

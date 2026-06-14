@@ -67,9 +67,6 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
     rh.push({ speaker: rand(innocents), text: rand(TMPL.weaponHint)(rhWeapon.name), deductive: false });
   }
 
-  // Ghost/guardian angel flavor clue from victim.
-  rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true, deductive: false });
-
   // Hysterical accusations — accuser must not have personally vouched for their target.
   // These come from the generic rhAccuse pool, not a personality pool, so no personality tag.
   const accuserBacked = (accuser, target) =>
@@ -80,12 +77,14 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
   rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true, deductive: false });
   rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true, deductive: false });
 
-  // Personality flavor: one extra line per personality-typed suspect, tagged with their personality.
-  const allCrewmates = [...innocents, answer.suspect];
+  // Personality flavor: one extra line per personality-typed crewmate (includes victim via 'dead').
+  const allCrewmates = [...innocents, answer.suspect, victim];
   for (const crewmate of allCrewmates) {
     const ptype = personalities[crewmate.name];
     if (!ptype) continue;
-    if (ptype === 'silly') {
+    if (ptype === 'dead') {
+      rh.push({ speaker: crewmate, text: rand(GUARDIAN_ANGEL_LINES), dead: true, deductive: false, personality: 'dead' });
+    } else if (ptype === 'silly') {
       rh.push({ speaker: crewmate, text: rand(SILLY_LINES), deductive: false, personality: 'silly' });
     } else if (ptype === 'hysterical') {
       const targets = allCrewmates.filter(c => c.name !== crewmate.name);

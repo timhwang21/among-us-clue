@@ -113,7 +113,8 @@ export function buildExtraHints(answer, trustChain, victim) {
 export function createGame() {
   const answer = { suspect: rand(SUSPECTS), room: rand(ROOMS), weapon: rand(WEAPONS) };
   const victim = rand(EXTRAS);
-  const personalities = assignPersonalities([...SUSPECTS, victim]);
+  const personalities = assignPersonalities(SUSPECTS);
+  personalities[victim.name] = 'dead';
   const { clues, trustChain } = buildClues(answer, victim, personalities);
   const extraHints = buildExtraHints(answer, trustChain, victim);
   return { answer, victim, clues, extraHints, trustChain, personalities };
