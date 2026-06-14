@@ -1,5 +1,5 @@
 import { TYPE } from './facts.js';
-import { TMPL, SILLY_LINES, GUARDIAN_ANGEL_LINES } from './data.js';
+import { TMPL, SILLY_LINES, GUARDIAN_ANGEL_LINES, PERSONALITY_LINES } from './data.js';
 import { rand, shuffle } from './utils.js';
 
 // Turn one deductive fact into a rendered clue object { speaker, text, accusation?, dead? }.
@@ -45,8 +45,8 @@ export function factToClue(fact, answer) {
 }
 
 // Build the non-deductive noise clues: silly, ghost flavor, behavioral red herrings,
-// hysterical accusations, weapon/room corroboration red herrings.
-export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurderWeapons, vouches }) {
+// hysterical accusations, weapon/room corroboration red herrings, personality flavor.
+export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurderWeapons, vouches, personalities = {} }) {
   const rh = [];
   const shuffledInnocents = shuffle(innocents.slice());
   const [sp0, sp1, sp2, sp3] = shuffledInnocents;
@@ -60,10 +60,11 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
   if (rhRooms.length > 1)
     rh.push({ speaker: sp3, text: rand(TMPL.rhRoom)(sp0.name, rhRooms[1].name) });
 
-  // Silly flavor lines.
+  // Silly flavor lines — silly-personality suspects get 2 lines, others get 1.
   const sillyPool = shuffle([...innocents, answer.suspect]);
-  rh.push({ speaker: sillyPool[0], text: rand(SILLY_LINES) });
-  rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES) });
+  const sillyCount = personalities[sillyPool[0].name] === 'silly' ? 2 : 1;
+  for (let i = 0; i < sillyCount; i++) rh.push({ speaker: sillyPool[0], text: rand(SILLY_LINES) });
+  if (sillyCount < 2) rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES) });
 
   // Ghost/guardian angel flavor clue from victim.
   rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true });
@@ -76,6 +77,23 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
   while (accuserBacked(accusers[0], accusers[1]) || accuserBacked(accusers[2], accusers[3]));
   rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true });
   rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true });
+
+  // Personality flavor: one extra line per personality-typed suspect.
+  const allCrewmates = [...innocents, answer.suspect];
+  for (const crewmate of allCrewmates) {
+    const ptype = personalities[crewmate.name];
+    if (!ptype) continue;
+    if (ptype === 'silly') {
+      rh.push({ speaker: crewmate, text: rand(SILLY_LINES) });
+    } else if (ptype === 'hysterical') {
+      const targets = allCrewmates.filter(c => c.name !== crewmate.name);
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.hysterical)(rand(targets).name), accusation: true });
+    } else if (ptype === 'peacemaker') {
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.peacemaker) });
+    } else if (ptype === 'salty') {
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.salty) });
+    }
+  }
 
   return rh;
 }

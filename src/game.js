@@ -1,4 +1,4 @@
-import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, TMPL, GUARDIAN_ANGEL_LINES, GUARDIAN_ANGEL_EVIDENCE, WEAPON_ELIM } from './data.js';
+import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, TMPL, GUARDIAN_ANGEL_LINES, GUARDIAN_ANGEL_EVIDENCE, WEAPON_ELIM, PERSONALITY_LINES } from './data.js';
 import { rand, shuffle } from './utils.js';
 import { vouch, witness, negation, roomCorr, weaponHint } from './facts.js';
 import { pickStrategy } from './strategies/index.js';
@@ -6,8 +6,17 @@ import { factToClue, buildNoise } from './render.js';
 import { verify } from './solver.js';
 
 const MAX_TRIES = 50;
+const PERSONALITY_TYPES = ['silly', 'hysterical', 'peacemaker', 'salty'];
 
-export function buildClues(answer, victim) {
+// Assign one personality per crewmate. Each type may appear 0, 1, or 2 times;
+// any crewmates beyond the assigned pool get null (no personality flavor).
+function assignPersonalities(crewmates) {
+  // Build a pool with two slots per type, then shuffle and deal.
+  const pool = shuffle([...PERSONALITY_TYPES, ...PERSONALITY_TYPES]);
+  return Object.fromEntries(crewmates.map((c, i) => [c.name, pool[i] || null]));
+}
+
+export function buildClues(answer, victim, personalities) {
   const innocents = shuffle(SUSPECTS.filter(s => s.name !== answer.suspect.name));
   const nonMurderRooms   = ROOMS.filter(r => r.name !== answer.room.name);
   const nonMurderWeapons = WEAPONS.filter(w => w.name !== answer.weapon.name);
@@ -64,6 +73,7 @@ export function buildClues(answer, victim) {
       nonMurderRooms,
       nonMurderWeapons,
       vouches: vouchPairs,
+      personalities,
     });
 
     const clues = shuffle([...deductiveClues, ...decorative, ...noiseClues]);
@@ -111,9 +121,11 @@ export function createGame() {
   const extras = shuffle(EXTRAS.slice());
   const victim = extras[0];
   const silly  = [extras[1], extras[2]];
-  const { clues, trustChain } = buildClues(answer, victim);
+  // Assign personalities to all 5 suspects + victim (6 crewmates).
+  const personalities = assignPersonalities([...SUSPECTS, victim]);
+  const { clues, trustChain } = buildClues(answer, victim, personalities);
   const extraHints = buildExtraHints(answer, trustChain, victim);
-  return { answer, victim, silly, clues, extraHints, trustChain };
+  return { answer, victim, silly, clues, extraHints, trustChain, personalities };
 }
 
 // Derive which innocents are provably innocent from the vouch edges alone (trust-axiom cascade).

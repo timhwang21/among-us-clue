@@ -54,7 +54,53 @@ export const SILLY_LINES = [
   '"I was in the cafeteria but I wasn\'t really paying attention because I was thinking about soup."',
   '"Whatever. I don\'t even care who did it. Actually I do care. But whatever."',
   '"I tried to fix the oxygen but I don\'t know where it is. Still don\'t."',
+  '"I have so many tasks left. Not that it matters now. Kind of matters though."',
+  '"I keep forgetting which color I am. Red? No. Anyway."',
+  '"Someone ate my snacks in the cafeteria and honestly that feels relevant."',
+  '"I got stuck in a vent for like five minutes. Procedurally. Anyway."',
+  '"The map makes no sense. I walked into a wall twice before the alarm even went off."',
+  '"I started doing my tasks but then I got distracted by a blinking light and here we are."',
+  '"I don\'t know what half the rooms do. Shields? Shields from what? Anyway."',
+  '"I spilled something in MedBay earlier. Probably unrelated. Almost certainly unrelated."',
 ];
+
+// Personality-specific flavor lines.
+export const PERSONALITY_LINES = {
+  hysterical: [
+    n => `"EVERYONE look at ${n}. LOOK. Why is no one looking?!"`,
+    n => `"I have a very bad feeling about ${n} and I won\'t be explaining further."`,
+    n => `"${n} did it. I know it in my soul. My SOUL."`,
+    n => `"Why is everyone so calm?! ${n} is RIGHT THERE."`,
+    n => `"I\'m begging. BEGGING. Just look at ${n} for ONE second."`,
+    n => `"${n}. It\'s ${n}. We\'re done here. Go home."`,
+    n => `"My gut says ${n}. My gut has never been wrong. My gut once saved my life in Navigation."`,
+    n => `"I\'m not being hysterical. You\'re being hysterical. Also ${n} did it."`,
+  ],
+  peacemaker: [
+    '"Everyone please take a breath. We can figure this out together if we stay calm."',
+    '"Let\'s focus on the clues and not on pointing fingers, okay? That\'s how we win."',
+    '"I know it\'s scary but we need to work as a team right now."',
+    '"Can we all agree to just share what we know? No accusations yet."',
+    '"Maybe we skip this vote. We don\'t have enough information to decide fairly."',
+    '"Let\'s be logical about this. Everyone gets a chance to speak."',
+    '"I really think we should hear everyone out before we jump to conclusions."',
+    '"I\'m not saying anyone is right or wrong. I\'m saying we should all just breathe."',
+    '"We\'re all stressed. That\'s normal. But let\'s not vote someone out on a feeling."',
+    '"If we work together we can solve this. The clues are there. Trust each other."',
+  ],
+  salty: [
+    '"Honestly it\'s obvious. I don\'t know why we\'re still here."',
+    '"I solved this ten minutes ago. No one listened. As usual."',
+    '"This is not complicated. I genuinely don\'t understand the confusion."',
+    '"Some people here are really making this harder than it needs to be."',
+    '"I have been saying this from the START. Does anyone read the clues? Anyone?"',
+    '"The answer is staring everyone in the face. I\'m so tired."',
+    '"Fine. Don\'t listen to me. Vote whoever you want. It\'ll be wrong, but fine."',
+    '"I\'ve already figured it out. I\'m just waiting for everyone else to catch up."',
+    '"Every meeting. Every single meeting. We go in circles."',
+    '"If I have to explain the trust chain one more time I am going to lose my mind."',
+  ],
+};
 
 export const ROOMS = [
   { name: 'Cafeteria',  emoji: '🍽️' },

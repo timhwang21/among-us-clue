@@ -308,6 +308,22 @@ canvas#stars {
   font-size: 1.1em; font-weight: 800; color: white;
 }
 
+/* =========== PERSONALITIES =========== */
+#result-personalities {
+  max-width: 520px; width: 100%;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px; padding: 16px 20px;
+}
+.pers-header { font-family: 'Orbitron', sans-serif; font-size: 0.75em; letter-spacing: 0.1em; color: #888; margin-bottom: 10px; text-align: center; }
+.pers-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.pers-item { display: flex; align-items: center; gap: 6px; font-size: 0.9em; }
+.pers-name { font-weight: 700; }
+.pers-badge { font-size: 0.78em; padding: 2px 7px; border-radius: 99px; background: rgba(255,255,255,0.08); color: #aaa; letter-spacing: 0.04em; }
+.pers-badge.silly      { background: rgba(255,220,80,0.15);  color: #ffd940; }
+.pers-badge.hysterical { background: rgba(255,80,80,0.15);   color: #ff6060; }
+.pers-badge.peacemaker { background: rgba(80,200,120,0.15);  color: #50d870; }
+.pers-badge.salty      { background: rgba(160,120,220,0.15); color: #c090f0; }
+
 /* =========== CLUE REVEAL =========== */
 @keyframes clueIn {
   from { opacity: 0; transform: translateY(6px); }
@@ -489,6 +505,7 @@ canvas#stars {
     <button class="btn btn-secondary" onclick="showScreen('title')">🏠 Main Menu</button>
     <button class="btn btn-secondary" onclick="downloadLog()">📥 Download Log</button>
   </div>
+  <div id="result-personalities" style="display:none"></div>
   <div id="result-log">
     <div class="result-log-header">EVIDENCE LOG</div>
     <div id="result-log-clues"></div>
@@ -517,6 +534,7 @@ var killRisk       = 0;
 var marks          = { suspects: {}, rooms: {}, weapons: {} };
 var victim         = null;
 var silly          = [];
+var personalities  = {};
 var connections    = [];
 var _drag          = { active: false, fromEl: null, fromType: '', fromName: '', curX: 0, curY: 0 };
 
@@ -558,6 +576,7 @@ function startGame() {
   silly         = game.silly;
   clues         = game.clues;
   extraHints    = game.extraHints;
+  personalities = game.personalities || {};
   marks         = { suspects: {}, rooms: {}, weapons: {} };
   clueMarks     = [];
   clueRevealIdx = 0;
@@ -976,6 +995,22 @@ function showResult(correct) {
 function populateResultLog() {
   document.getElementById('result-log-clues').innerHTML =
     document.getElementById('clues-list').innerHTML;
+
+  var persEl = document.getElementById('result-personalities');
+  var allCrew = SUSPECTS.concat([victim]);
+  var persItems = allCrew.map(function(c) {
+    var ptype = personalities[c.name];
+    var badgeHTML = ptype
+      ? '<span class="pers-badge ' + ptype + '">' + ptype + '</span>'
+      : '';
+    return '<div class="pers-item">'
+      + crewSVG(c.color, c.dark, 18)
+      + '<span class="pers-name" style="color:' + c.color + '">' + c.name + '</span>'
+      + badgeHTML
+      + '</div>';
+  }).join('');
+  persEl.innerHTML = '<div class="pers-header">CREW PERSONALITIES</div><div class="pers-list">' + persItems + '</div>';
+  persEl.style.display = 'block';
 
   var hintsList = document.getElementById('result-log-hints-list');
   var hintsSection = document.getElementById('result-log-hints');

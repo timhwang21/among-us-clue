@@ -76,18 +76,18 @@ describe('createGame', () => {
     expect(killerAccusations.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('exactly 2 hysterical accusation clues from non-killer speakers', () => {
+  it('at least 2 hysterical accusation clues from non-killer speakers', () => {
     const { answer, clues } = createGame();
     const innocentAccusations = clues.filter(
       c => c.accusation === true && c.speaker.name !== answer.suspect.name
     );
-    expect(innocentAccusations).toHaveLength(2);
+    expect(innocentAccusations.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('exactly 2 silly lines appear in base clues', () => {
+  it('at least 2 silly lines appear in base clues', () => {
     const { clues } = createGame();
     const sillyClues = clues.filter(c => SILLY_LINES.includes(c.text));
-    expect(sillyClues).toHaveLength(2);
+    expect(sillyClues.length).toBeGreaterThanOrEqual(2);
   });
 
   it('exactly 1 guardian angel clue from victim with dead: true', () => {
