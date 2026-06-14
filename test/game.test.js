@@ -96,16 +96,12 @@ describe('createGame', () => {
     expect(ghostClues).toHaveLength(1);
   });
 
-  it('both alibi pairs have mutual backing in base clues', () => {
-    const { trustChain, clues } = createGame();
-    const { A, B, C, D } = trustChain;
-    const speakerTexts = name => clues.filter(c => c.speaker.name === name).map(c => c.text);
-    // A backs B and B backs A in base clues
-    expect(speakerTexts(A.name).some(t => t.includes(B.name))).toBe(true);
-    expect(speakerTexts(B.name).some(t => t.includes(A.name))).toBe(true);
-    // C backs D and D backs C in base clues
-    expect(speakerTexts(C.name).some(t => t.includes(D.name))).toBe(true);
-    expect(speakerTexts(D.name).some(t => t.includes(C.name))).toBe(true);
+  it('trustChain has innocents array, killerFakeRoom, and structure', () => {
+    const { trustChain } = createGame();
+    expect(Array.isArray(trustChain.innocents)).toBe(true);
+    expect(trustChain.innocents.length).toBe(4);
+    expect(trustChain.killerFakeRoom).toBeTruthy();
+    expect(typeof trustChain.structure).toBe('string');
   });
 
   it('guardian angel base clue has no helpful keywords', () => {
@@ -158,7 +154,7 @@ describe('createGame', () => {
     const { answer, trustChain, extraHints } = createGame();
     expect(extraHints[3].text).toContain(answer.suspect.name);
     expect(extraHints[3].text).toContain(trustChain.killerFakeRoom.name);
-    expect(extraHints[3].speaker.name).toBe(trustChain.B.name);
+    expect(extraHints[3].speaker.name).toBe(trustChain.innocents[1].name);
   });
 
   it('extraHints[2] and [4] (behavioral) name the killer and have no accusation flag', () => {
