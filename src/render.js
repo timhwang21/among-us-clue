@@ -60,6 +60,13 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
   if (rhRooms.length > 1)
     rh.push({ speaker: sp3, text: rand(TMPL.rhRoom)(sp0.name, rhRooms[1].name) });
 
+  // Fake weapon-missing clue: one innocent reports a non-murder weapon missing, creating
+  // uncertainty about which missing-weapon claim is the real evidence.
+  if (nonMurderWeapons.length) {
+    const rhWeapon = rand(nonMurderWeapons);
+    rh.push({ speaker: rand(innocents), text: rand(TMPL.weaponHint)(rhWeapon.name) });
+  }
+
   // Silly flavor lines — silly-personality suspects get 2 lines, others get 1.
   const sillyPool = shuffle([...innocents, answer.suspect]);
   const sillyCount = personalities[sillyPool[0].name] === 'silly' ? 2 : 1;
