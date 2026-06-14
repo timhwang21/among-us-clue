@@ -67,12 +67,14 @@ describe('createGame', () => {
     expect(killerAccusations.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('at least 2 hysterical accusation clues from non-killer speakers', () => {
+  it('all innocent accusation clues have personality hysterical', () => {
     const { answer, clues } = createGame();
     const innocentAccusations = clues.filter(
       c => c.accusation === true && c.speaker.name !== answer.suspect.name
     );
-    expect(innocentAccusations.length).toBeGreaterThanOrEqual(2);
+    for (const c of innocentAccusations) {
+      expect(c.personality).toBe('hysterical');
+    }
   });
 
   it('silly personality clues come from SILLY_LINES', () => {

@@ -436,7 +436,7 @@ canvas#stars {
   .game-grid { grid-template-columns: 1fr; }
   .clues-panel-col { grid-column: 1; grid-row: auto; }
   .acc-actions { grid-column: 1; }
-  .clues-panel { max-height: 60vh; position: static; }
+  .clues-panel { height: 60vh; position: static; }
   #result-log { max-height: 70vh; overflow-y: auto; }
 }
 </style>
@@ -890,7 +890,7 @@ function getExtraHint() {
     item.className = `clue-item extra-hint-item${hint.dead ? ' clue-dead' : ''}`;
     const speakerHTML = hint.speaker
       ? (() => {
-          const angryClass = hint.accusation ? ' angry' : '';
+          const angryClass = hint.personality === 'hysterical' ? ' angry' : '';
           const badge = hint.personality ? `<span class="pers-badge ${hint.personality}">${hint.personality}</span>` : '';
           return `<span class="clue-speaker" style="color:${hint.speaker.color}">`
             + `<span class="clue-crew-icon${angryClass}">${crewSVG(hint.speaker.color, hint.speaker.dark, 18)}</span>`
@@ -951,7 +951,7 @@ function renderClues() {
     const m          = clueMarks[i] || 0;
     const isNew      = i === clueRevealIdx - 1 ? ' clue-reveal' : '';
     const deadClass  = c.dead ? ' clue-dead' : '';
-    const angryClass = c.accusation ? ' angry' : '';
+    const angryClass = c.personality === 'hysterical' ? ' angry' : '';
     const badge      = c.personality ? `<span class="pers-badge ${c.personality}">${c.personality}</span>` : '';
     return `<div class="clue-item${isNew}${deadClass} ${MARK_STATES[m]}" onclick="cycleClue(${i})">`
       + `<span class="clue-num">${i + 1}</span>`
@@ -1198,7 +1198,7 @@ function populateResultLog() {
     const deadClass = c.dead ? ' clue-dead' : '';
     return `<div class="clue-item${deadClass} ${MARK_STATES[m]}">`
       + `<span class="clue-num">${i + 1}</span>`
-      + `<div class="clue-body">${speakerHTML(c.speaker, { angry: !!c.accusation, deductive: c.deductive ?? null, personality: c.personality ?? null })}`
+      + `<div class="clue-body">${speakerHTML(c.speaker, { angry: c.personality === 'hysterical', deductive: c.deductive ?? null, personality: c.personality ?? null })}`
       + `<span class="clue-speech">${c.text}</span></div></div>`;
   }).join('');
 
@@ -1206,7 +1206,7 @@ function populateResultLog() {
   document.getElementById('result-log-hints-list').innerHTML = extraHints.map((hint, i) => {
     const deadClass = hint.dead ? ' clue-dead' : '';
     const speaker   = hint.speaker
-      ? speakerHTML(hint.speaker, { angry: !!hint.accusation, personality: hint.personality ?? null })
+      ? speakerHTML(hint.speaker, { angry: hint.personality === 'hysterical', personality: hint.personality ?? null })
       : '<span class="extra-hint-label">🔍 INVESTIGATION</span>';
     return `<div class="clue-item extra-hint-item${deadClass}">`
       + `<span class="clue-num">${i + 1}</span>`

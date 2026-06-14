@@ -54,9 +54,6 @@ export function buildClues(answer, victim, personalities) {
     const err = verify(coreFacts, answer);
     if (err) continue;
 
-    // Build vouch-pair tuples for noise construction (accuser constraint).
-    const vouchPairs = edges.map(e => [e.from, e.to]);
-
     // Render deductive facts into clues.
     const deductiveClues = coreFacts.flatMap(f => factToClue(f, answer));
 
@@ -66,15 +63,7 @@ export function buildClues(answer, victim, personalities) {
       { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(rand(innocents).name), accusation: true, deductive: false },
     ];
 
-    const noiseClues = buildNoise({
-      innocents,
-      answer,
-      victim,
-      nonMurderRooms,
-      nonMurderWeapons,
-      vouches: vouchPairs,
-      personalities,
-    });
+    const noiseClues = buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurderWeapons, personalities });
 
     const clues = deconflictConsecutive(shuffle([...deductiveClues, ...decorative, ...noiseClues]), c => c.speaker.name);
     const trustChain = { innocents, killerFakeRoom, structure: strategy.id };

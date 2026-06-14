@@ -46,7 +46,7 @@ export function factToClue(fact, answer) {
 
 // Build the non-deductive noise clues: silly, ghost flavor, behavioral red herrings,
 // hysterical accusations, weapon/room corroboration red herrings, personality flavor.
-export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurderWeapons, vouches, personalities = {} }) {
+export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurderWeapons, personalities = {} }) {
   const rh = [];
   const shuffledInnocents = shuffle(innocents.slice());
   const [sp0, sp1, sp2, sp3] = shuffledInnocents;
@@ -67,16 +67,6 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
     rh.push({ speaker: rand(innocents), text: rand(TMPL.weaponHint)(rhWeapon.name), deductive: false });
   }
 
-  // Hysterical accusations — accuser must not have personally vouched for their target.
-  // These come from the generic rhAccuse pool, not a personality pool, so no personality tag.
-  const accuserBacked = (accuser, target) =>
-    vouches.some(([from, to]) => from === accuser && to === target);
-  let accusers;
-  do { accusers = shuffle(innocents.slice()); }
-  while (accuserBacked(accusers[0], accusers[1]) || accuserBacked(accusers[2], accusers[3]));
-  rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true, deductive: false });
-  rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true, deductive: false });
-
   // Personality flavor: one extra line per personality-typed crewmate (includes victim via 'dead').
   const allCrewmates = [...innocents, answer.suspect, victim];
   for (const crewmate of allCrewmates) {
@@ -87,8 +77,8 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
     } else if (ptype === 'silly') {
       rh.push({ speaker: crewmate, text: rand(SILLY_LINES), deductive: false, personality: 'silly' });
     } else if (ptype === 'hysterical') {
-      const targets = allCrewmates.filter(c => c.name !== crewmate.name);
-      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.hysterical)(rand(targets).name), accusation: true, deductive: false, personality: 'hysterical' });
+      const targets = allCrewmates.filter(c => c.name !== crewmate.name && c.name !== victim.name);
+      rh.push({ speaker: crewmate, text: rand(TMPL.rhAccuse)(crewmate.name, rand(targets).name), accusation: true, deductive: false, personality: 'hysterical' });
     } else if (ptype === 'peacemaker') {
       rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.peacemaker), deductive: false, personality: 'peacemaker' });
     } else if (ptype === 'salty') {
