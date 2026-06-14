@@ -438,187 +438,10 @@ canvas#stars {
   </div>
 </div>
 
-<script>
-// ================================================================
-//  DATA
-// ================================================================
-var SUSPECTS = [
-  { name: 'Red',    color: '#c51111', dark: '#8a0a0a' },
-  { name: 'Blue',   color: '#1538d1', dark: '#0b1a8a' },
-  { name: 'Green',  color: '#11802b', dark: '#0a5a1d' },
-  { name: 'Purple', color: '#7b2fbe', dark: '#4e1a85' },
-  { name: 'Yellow', color: '#c8b800', dark: '#8a7d06' },
-];
-
-// Extra crewmates — never the impostor. Two are dealt each game: one victim, one silly.
-var EXTRAS = [
-  { name: 'Orange', color: '#f07d0c', dark: '#a85208' },
-  { name: 'White',  color: '#d6e0f0', dark: '#8a96a8' },
-  { name: 'Black',  color: '#3d3d3d', dark: '#1a1a1a' },
-  { name: 'Pink',   color: '#ee54bb', dark: '#a82e80' },
-  { name: 'Tan',    color: '#c29b6a', dark: '#8a6a3f' },
-  { name: 'Lime',   color: '#4cff50', dark: '#29a82d' },
-  { name: 'Maroon', color: '#6b2737', dark: '#3d1016' },
-  { name: 'Coral',  color: '#ec7578', dark: '#a83a3c' },
-];
-
-var victim = null;  // set by startGame()
-var silly  = [];    // set by startGame() — two crewmates
-
-var SILLY_LINES = [
-  '"I was just eating my spaghetti. Does no one care about my spaghetti?"',
-  '"I think the vents are haunted. Unrelated to the murder, I just wanted someone to know."',
-  '"My tasks were so hard today. Admin? More like BADmin. Anyway."',
-  '"I saw something weird but I got distracted by a button and pressed it for like ten minutes."',
-  '"Not to be dramatic but I\'ve been having a really tough week, you know?"',
-  '"I feel like nobody ever listens to me at these meetings. Like, ever."',
-  '"I pressed the big red button earlier but I don\'t think that was related."',
-  '"I was in the cafeteria but I wasn\'t really paying attention because I was thinking about soup."',
-  '"Whatever. I don\'t even care who did it. Actually I do care. But whatever."',
-  '"I tried to fix the oxygen but I don\'t know where it is. Still don\'t."',
-];
-
-
-var ROOMS = [
-  { name: 'Cafeteria',      emoji: '🍽️' },
-  { name: 'Electrical',     emoji: '⚡' },
-  { name: 'Navigation',     emoji: '🧭' },
-  { name: 'MedBay',         emoji: '💊' },
-  { name: 'Reactor',        emoji: '⚛️' },
-  { name: 'O2',             emoji: '💨' },
-  { name: 'Security',       emoji: '🔒' },
-  { name: 'Shields',        emoji: '🛡️' },
-];
-
-var WEAPONS = [
-  { name: 'Wrench',           emoji: '🔧' },
-  { name: 'Kitchen Knife',    emoji: '🔪' },
-  { name: 'Stop Sign',        emoji: '🛑' },
-  { name: 'Bone',             emoji: '🦴' },
-  { name: 'Hammer',           emoji: '🔨' },
-  { name: 'Screwdriver',      emoji: '🪛' },
-];
-
-// ================================================================
-//  CLUE TEMPLATES  (speech text only — speaker stored separately)
-// ================================================================
-var TMPL = {
-  // ALIBI — solo first-person, no partner named
-  alibi: [
-    function(r){ return '"I was running diagnostics in ' + r + '. I never left."'; },
-    function(r){ return '"I was doing repairs in ' + r + ' when the alarm went off."'; },
-    function(r){ return '"I was fixing the wiring in ' + r + ' the whole time."'; },
-    function(r){ return '"I was in ' + r + '. I didn\'t go anywhere near the incident."'; },
-    function(r){ return '"I spent the entire time working in ' + r + '. Didn\'t move once."'; },
-    function(r){ return '"My tasks were all in ' + r + '. I was there until the meeting was called."'; },
-    function(r){ return '"I was calibrating equipment in ' + r + '. Boring but I was definitely there."'; },
-  ],
-  // BACKING UP — "I can confirm X was in Y" (could be impostor attaching to innocent)
-  backing: [
-    function(o, r){ return '"I can confirm ' + o + ' was in ' + r + '. I saw them there."'; },
-    function(o, r){ return '"' + o + ' was in ' + r + ' — I walked right past them."'; },
-    function(o, r){ return '"I saw ' + o + ' working in ' + r + '. They didn\'t go anywhere."'; },
-    function(o, r){ return '"' + o + ' was definitely in ' + r + ' when it happened."'; },
-    function(o, r){ return '"I passed through ' + r + ' and ' + o + ' was there doing tasks."'; },
-    function(o, r){ return '"' + o + '? Yeah, I saw them in ' + r + '. Not sure for how long though."'; },
-    function(o, r){ return '"I noticed ' + o + ' in ' + r + ' earlier. They looked busy."'; },
-  ],
-  // KILLER LIE — false alibi
-  killerLie: [
-    function(r){ return '"I was in ' + r + ' doing tasks the whole time. I swear I didn\'t do anything wrong!"'; },
-    function(r){ return '"Check ' + r + ' — that\'s where I was. I have absolutely nothing to hide!"'; },
-    function(r){ return '"I was doing repairs in ' + r + ' when the alarm went off. I\'m completely innocent!"'; },
-    function(r){ return '"Ask anyone — I was in ' + r + ' the whole time, just doing my job."'; },
-    function(r){ return '"I never left ' + r + '. You can check the logs if you want."'; },
-    function(r){ return '"My entire shift was spent in ' + r + '. I don\'t know why anyone would suspect me."'; },
-  ],
-  // ACCUSATION — direct, naming the liar (used in extra hints)
-  accusation: [
-    function(k, r){ return '"' + k + ' is lying! I was in ' + r + ' the whole time and they were NEVER there!"'; },
-    function(k, r){ return '"' + k + ' was NOT in ' + r + '. I was there and I never saw them. They\'re making it up!"'; },
-    function(k, r){ return '"I don\'t care what ' + k + ' told you — they were not in ' + r + '. I would have seen them."'; },
-    function(k, r){ return '"' + k + ' is lying about being in ' + r + '. I never left that room and they weren\'t there."'; },
-    function(k, r){ return '"' + k + ' claims they were in ' + r + '? That\'s impossible. I was there the entire time."'; },
-  ],
-  // INFORMATIONAL — murder room
-  roomHint: [
-    function(r){ return '"I found the body near ' + r + '! I panicked and called the emergency meeting immediately!"'; },
-    function(r){ return '"I heard a horrible crash from ' + r + ' and then the lights cut out. Something happened in there."'; },
-    function(r){ return '"I walked past ' + r + ' and the door was forced open. I saw the scene and ran to call a meeting!"'; },
-    function(r){ return '"The body was just outside ' + r + '. I almost didn\'t see it in the dark."'; },
-    function(r){ return '"I stumbled on the scene near ' + r + ' and immediately hit the emergency button."'; },
-  ],
-  roomCorr: [
-    function(r){ return '"I was near ' + r + ' when I heard a loud bang. I didn\'t stop to look."'; },
-    function(r){ return '"The lights were flickering near ' + r + ' right before the alarm went off."'; },
-    function(r){ return '"I saw someone sprinting away from ' + r + ' just before the emergency meeting was called."'; },
-    function(r){ return '"There was some kind of commotion near ' + r + ' earlier. I figured it was just equipment."'; },
-    function(r){ return '"I noticed the door to ' + r + ' was left wide open. That\'s unusual."'; },
-  ],
-  // INFORMATIONAL — murder weapon
-  weaponHint: [
-    function(w){ return '"The ' + w + ' was missing from where it\'s always stored! Someone took it before this happened."'; },
-    function(w){ return '"I checked storage earlier and the ' + w + ' was just gone. That\'s never happened before."'; },
-    function(w){ return '"I noticed the ' + w + ' wasn\'t in its place. I thought it was weird — now I know why."'; },
-    function(w){ return '"Someone moved the ' + w + '. It wasn\'t where we keep it."'; },
-    function(w){ return '"The ' + w + ' is unaccounted for. I looked everywhere and couldn\'t find it."'; },
-  ],
-  weaponCorr: [
-    function(w, r){ return '"I noticed a ' + w + ' near ' + r + ' earlier. I don\'t remember it being there before."'; },
-    function(w, r){ return '"There was a ' + w + ' on the floor near ' + r + '. I just walked past it — didn\'t think much of it."'; },
-    function(w, r){ return '"I saw a ' + w + ' sitting near ' + r + ' at some point. Not sure if that\'s relevant."'; },
-    function(w, r){ return '"A ' + w + ' was near the entrance to ' + r + '. Could be nothing, but it caught my eye."'; },
-    function(w, r){ return '"Someone left a ' + w + ' near ' + r + '. I almost tripped over it."'; },
-    function(w, r){ return '"I spotted a ' + w + ' just outside ' + r + ' earlier today. Odd place for it."'; },
-  ],
-  // HYSTERICAL ACCUSATIONS — innocents wildly pointing fingers, pure noise
-  rhAccuse: [
-    function(a, b){ return '"It was ' + b + '!! I KNOW it was ' + b + '!! Don\'t ask me how I know, I just know!!"'; },
-    function(a, b){ return '"' + b + ' did it. I\'m not arguing about this."'; },
-    function(a, b){ return '"I am BEGGING everyone to look at ' + b + '. BEGGING."'; },
-    function(a, b){ return '"' + b + '. That\'s it. That\'s my whole statement. ' + b + '."'; },
-    function(a, b){ return '"I\'ve been saying it since day one: ' + b + '. Nobody listened. Well? NOW will you listen?!"'; },
-    function(a, b){ return '"Something about ' + b + ' has always been off and I will die on this hill."'; },
-    function(a, b){ return '"You want to know who did it? ' + b + '. You\'re welcome."'; },
-    function(a, b){ return '"I don\'t have evidence. I don\'t need evidence. It was ' + b + '."'; },
-    function(a, b){ return '"' + b + ' has shifty eyes. That\'s not an accusation, that\'s a fact. But also an accusation."'; },
-    function(a, b){ return '"I can\'t prove it but ' + b + ' is ABSOLUTELY responsible and I\'ll stake my life on it."'; },
-  ],
-  // RED HERRINGS — true but misleading
-  rhRoom: [
-    function(n, r){ return '"I saw ' + n + ' in ' + r + ' earlier. They seemed totally normal."'; },
-    function(n, r){ return '"' + n + ' was near ' + r + ' before everything happened. Probably nothing."'; },
-    function(n, r){ return '"I passed through ' + r + ' and bumped into ' + n + '. They looked a little nervous, honestly."'; },
-    function(n, r){ return '"' + n + ' was hanging around outside ' + r + ' for a while. I didn\'t think anything of it."'; },
-    function(n, r){ return '"I spotted ' + n + ' heading toward ' + r + ' earlier. No idea if they went in."'; },
-  ],
-  rhWeapon: [
-    function(n, w){ return '"' + n + ' had the ' + w + ' last time I saw it. They were using it for repairs, I think."'; },
-    function(n, w){ return '"I saw ' + n + ' put the ' + w + ' back in storage earlier. At least, I thought that\'s what they did."'; },
-    function(n, w){ return '"The ' + w + ' was near ' + n + '\'s workstation earlier today."'; },
-    function(n, w){ return '"' + n + ' was carrying a ' + w + ' earlier. Said they needed it for a task."'; },
-  ],
-  rhBehavior: [
-    function(n){ return '"' + n + ' was acting really weird and jumpy before the alarm."'; },
-    function(n){ return '"I noticed ' + n + ' looking around nervously in the hallway earlier."'; },
-    function(n){ return '"' + n + ' was avoiding eye contact with everyone before the meeting."'; },
-    function(n){ return '"' + n + ' kept checking over their shoulder when I walked past. Strange."'; },
-    function(n){ return '"' + n + ' seemed distracted and on edge before the alarm. Probably nothing."'; },
-  ],
-  // KILLER DEFLECTION — impostor tries to frame an innocent
-  killerDeflect: [
-    function(n){ return '"Why is everyone looking at me?? Look at ' + n + '! They were acting so suspicious before all this!"'; },
-    function(n){ return '"Honestly? I think ' + n + ' did it. I saw them near where it happened right before the alarm went off."'; },
-    function(n){ return '"I\'m telling you, it\'s ' + n + '. I saw them with the weapon earlier — just ask around!"'; },
-    function(n){ return '"Nobody\'s talking about ' + n + ' but they should be. I saw some very strange things coming from them."'; },
-    function(n){ return '"I don\'t want to accuse anyone, but... ' + n + ' was acting really off earlier. I\'d look there first."'; },
-    function(n){ return '"Has anyone else noticed ' + n + ' being weird? Because I have. Just saying."'; },
-    function(n){ return '"I think we\'re looking at the wrong person. ' + n + ' was near the scene. Why isn\'t anyone asking them?"'; },
-  ],
-};
-
-// Kill risk schedule: index = number of extra hints taken
-var KILL_RISKS = [0, 10, 20, 30, 40, 100];
+<script type="module">
+import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, KILL_RISKS } from './src/data.js';
+import { rand, shuffle } from './src/utils.js';
+import { createGame } from './src/game.js';
 
 // ================================================================
 //  GAME STATE
@@ -631,7 +454,8 @@ var extraHints     = [];
 var extraHintIdx   = 0;
 var killRisk       = 0;
 var marks          = { suspects: {}, rooms: {}, weapons: {} };
-var trustChain     = {};
+var victim         = null;
+var silly          = [];
 
 // ================================================================
 //  SVG HELPERS
@@ -659,34 +483,20 @@ function showScreen(name) {
 }
 
 // ================================================================
-//  UTILITIES
-// ================================================================
-function rand(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
-
-function shuffle(arr) {
-  var a = arr.slice();
-  for (var i = a.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1));
-    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
-  }
-  return a;
-}
-
-// ================================================================
 //  GAME START
 // ================================================================
 function startGame() {
-  answer        = { suspect: rand(SUSPECTS), room: rand(ROOMS), weapon: rand(WEAPONS) };
-  var extras    = shuffle(EXTRAS.slice());
-  victim        = extras[0];
-  silly         = [extras[1], extras[2]];
+  var game      = createGame();
+  answer        = game.answer;
+  victim        = game.victim;
+  silly         = game.silly;
+  clues         = game.clues;
+  extraHints    = game.extraHints;
   marks         = { suspects: {}, rooms: {}, weapons: {} };
   clueMarks     = [];
   clueRevealIdx = 0;
   extraHintIdx  = 0;
   killRisk      = 0;
-  clues         = buildClues();
-  extraHints    = buildExtraHints();
 
   fillSel('acc-suspect', SUSPECTS, function(s){ return s.name; }, function(s){ return s.name; });
   fillSel('acc-room',    ROOMS,    function(r){ return r.name; }, function(r){ return r.emoji + ' ' + r.name; });
@@ -741,132 +551,6 @@ function fillSel(id, items, valFn, labelFn) {
     opt.textContent = labelFn(item);
     sel.appendChild(opt);
   });
-}
-
-// ================================================================
-//  CONSTRAINT-BASED CLUE GENERATION
-//
-//  Alibi chains are ONE-DIRECTIONAL in base clues — A confirms B,
-//  but B's confirmation of A is gated behind a hint. This prevents
-//  the mutual-defense tell ("A says B, B says A → obviously both safe").
-//
-//  Killer gets two statements: a false alibi AND a deflection
-//  accusing an innocent, to muddy the waters.
-//
-//  Direct accusations are fully gated behind hints.
-// ================================================================
-function buildClues() {
-  var innocents        = shuffle(SUSPECTS.filter(function(s){ return s.name !== answer.suspect.name; }));
-  var A = innocents[0], B = innocents[1], C = innocents[2], D = innocents[3];
-
-  var nonMurderRooms   = ROOMS.filter(function(r){ return r.name !== answer.room.name; });
-  var nonMurderWeapons = WEAPONS.filter(function(w){ return w.name !== answer.weapon.name; });
-  var shuffledNMR      = shuffle(nonMurderRooms.slice());
-  var lieRoom          = shuffledNMR[0];
-  var cdRoom           = shuffledNMR[1] || shuffledNMR[0];
-
-  // Store for buildExtraHints
-  trustChain = { A: A, B: B, C: C, D: D, lieRoom: lieRoom, cdRoom: cdRoom };
-
-  var core = [
-    // Chain 1: A claims solo alibi; B backs A (B could be impostor attaching to innocent)
-    { speaker: A, text: rand(TMPL.alibi)(lieRoom.name) },
-    { speaker: B, text: rand(TMPL.backing)(A.name, lieRoom.name) },
-    // Chain 2: C claims solo alibi; D backs C (same ambiguity)
-    { speaker: C, text: rand(TMPL.alibi)(cdRoom.name) },
-    { speaker: D, text: rand(TMPL.backing)(C.name, cdRoom.name) },
-    // Killer's false alibi (claims lieRoom, but A only mentions B — not the killer)
-    { speaker: answer.suspect, text: rand(TMPL.killerLie)(lieRoom.name) },
-    // Killer deflects: accuses an innocent to muddy the waters
-    { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(D.name), accusation: true },
-    // Informational: D noticed something near the murder room (observational, not conclusive)
-    { speaker: D, text: rand(TMPL.roomCorr)(answer.room.name) },
-    // Informational: weapon
-    { speaker: B, text: rand(TMPL.weaponHint)(answer.weapon.name) },
-    { speaker: A, text: rand(TMPL.weaponCorr)(answer.weapon.name, answer.room.name) },
-  ];
-
-  // Red herrings
-  var rhRooms = shuffle(nonMurderRooms.filter(function(r){
-    return r.name !== lieRoom.name && r.name !== cdRoom.name;
-  }));
-  var rh = [];
-
-  // RH1: non-murder weapon spotted near non-murder room (same template as real weapon clue)
-  if (nonMurderWeapons.length && rhRooms.length) {
-    rh.push({ speaker: B, text: rand(TMPL.weaponCorr)(rand(nonMurderWeapons).name, rhRooms[0].name) });
-  }
-  // RH2: innocent had non-murder weapon
-  if (nonMurderWeapons.length > 1) {
-    rh.push({ speaker: C, text: rand(TMPL.rhWeapon)(D.name, nonMurderWeapons[1].name) });
-  }
-  // RH3: innocent spotted in a non-murder room (points suspicion at an innocent)
-  if (rhRooms.length > 1) {
-    rh.push({ speaker: D, text: rand(TMPL.rhRoom)(B.name, rhRooms[1].name) });
-  }
-
-  // Silly crewmates: pure noise
-  rh.push({ speaker: silly[0], text: rand(SILLY_LINES) });
-  rh.push({ speaker: silly[1], text: rand(SILLY_LINES) });
-
-  // Hysterical accusations: innocents wildly pointing fingers (noise, gets angry icon)
-  var accusers = shuffle([A, B, C, D]);
-  rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true });
-  rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true });
-
-  return shuffle(core.concat(rh));
-}
-
-// ================================================================
-//  EXTRA HINTS — ordered from process-of-elimination → direct
-//
-//  Hint 1: weapon elimination (soft, process of elimination)
-//  Hint 2: B confirms A — completes the one-directional alibi chain
-//  Hint 3: direct accusation by A naming the killer
-//  Hint 4: D confirms C — corroborates second alibi chain
-//  Hint 5: thermal sensor — definitively confirms murder room
-// ================================================================
-function buildExtraHints() {
-  var tc         = trustChain;
-  var nonWeapons = WEAPONS.filter(function(w){ return w.name !== answer.weapon.name; });
-
-  var hints = [];
-
-  // 1. Weapon elimination: a non-murder weapon confirmed safe (process of elimination)
-  if (nonWeapons.length) {
-    var sw = nonWeapons[0];
-    hints.push({
-      speaker: null,
-      text: 'The ' + sw.name + ' ' + sw.emoji + ' was found exactly where it belongs — undisturbed in storage. It wasn\'t used.',
-    });
-  }
-
-  // 2. Body found — C names the murder room directly (previously a base clue, now gated)
-  hints.push({
-    speaker: tc.C,
-    text: rand(TMPL.roomHint)(answer.room.name),
-  });
-
-  // 3. A reciprocates — confirms B was also there, completing the mutual alibi and clearing B
-  hints.push({
-    speaker: tc.A,
-    text: rand(TMPL.backing)(tc.B.name, tc.lieRoom.name),
-  });
-
-  // 4. Direct accusation — A names the killer explicitly (angry icon)
-  hints.push({
-    speaker: tc.A,
-    text: rand(TMPL.accusation)(answer.suspect.name, tc.lieRoom.name),
-    accusation: true,
-  });
-
-  // 5. C reciprocates — confirms D was also there, completing the second mutual alibi
-  hints.push({
-    speaker: tc.C,
-    text: rand(TMPL.backing)(tc.D.name, tc.cdRoom.name),
-  });
-
-  return hints;
 }
 
 // ================================================================
@@ -1183,8 +867,9 @@ function spawnConfetti() {
 //  INIT
 // ================================================================
 document.getElementById('title-crew').innerHTML =
-  SUSPECTS.concat(EXTRAS)
-    .map(function(s){ return crewSVG(s.color, s.dark, 58); }).join('');
+  SUSPECTS.concat(EXTRAS).map(s => crewSVG(s.color, s.dark, 58)).join('');
+
+Object.assign(window, { startGame, submitAccusation, getExtraHint, cycleMark, cycleClue, showScreen, downloadLog });
 </script>
 </body>
 </html>

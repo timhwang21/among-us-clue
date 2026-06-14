@@ -1,0 +1,138 @@
+import { describe, it, expect } from 'vitest';
+import { createGame } from '../src/game.js';
+import { SUSPECTS, EXTRAS, ROOMS, WEAPONS } from '../src/data.js';
+
+const ROOM_HINT_PHRASES = [
+  'found the body',
+  'door was forced open',
+  'called the emergency meeting',
+  'hit the emergency button',
+];
+
+describe('createGame', () => {
+  it('returns the required shape', () => {
+    const game = createGame();
+    expect(game).toHaveProperty('answer');
+    expect(game).toHaveProperty('victim');
+    expect(game).toHaveProperty('silly');
+    expect(game).toHaveProperty('clues');
+    expect(game).toHaveProperty('extraHints');
+    expect(game).toHaveProperty('trustChain');
+    expect(game.silly).toHaveLength(2);
+  });
+
+  it('answer.suspect is from SUSPECTS', () => {
+    const { answer } = createGame();
+    expect(SUSPECTS).toContainEqual(answer.suspect);
+  });
+
+  it('answer.room is from ROOMS', () => {
+    const { answer } = createGame();
+    expect(ROOMS).toContainEqual(answer.room);
+  });
+
+  it('answer.weapon is from WEAPONS', () => {
+    const { answer } = createGame();
+    expect(WEAPONS).toContainEqual(answer.weapon);
+  });
+
+  it('victim and both silly crewmates are from EXTRAS', () => {
+    const { victim, silly } = createGame();
+    expect(EXTRAS).toContainEqual(victim);
+    expect(EXTRAS).toContainEqual(silly[0]);
+    expect(EXTRAS).toContainEqual(silly[1]);
+  });
+
+  it('victim, silly[0], and silly[1] are all distinct', () => {
+    const { victim, silly } = createGame();
+    const names = [victim.name, silly[0].name, silly[1].name];
+    expect(new Set(names).size).toBe(3);
+  });
+
+  it('all clues have a speaker with name/color/dark and non-empty text', () => {
+    const { clues } = createGame();
+    for (const clue of clues) {
+      expect(clue.speaker).toBeTruthy();
+      expect(typeof clue.speaker.name).toBe('string');
+      expect(clue.speaker.name.length).toBeGreaterThan(0);
+      expect(typeof clue.speaker.color).toBe('string');
+      expect(typeof clue.speaker.dark).toBe('string');
+      expect(typeof clue.text).toBe('string');
+      expect(clue.text.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('killer appears as speaker in at least 2 base clues', () => {
+    const { answer, clues } = createGame();
+    const killerClues = clues.filter(c => c.speaker.name === answer.suspect.name);
+    expect(killerClues.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("killer's deflect clue has accusation: true", () => {
+    const { answer, clues } = createGame();
+    const killerAccusations = clues.filter(
+      c => c.speaker.name === answer.suspect.name && c.accusation === true
+    );
+    expect(killerAccusations.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('exactly 2 hysterical accusation clues from non-killer speakers', () => {
+    const { answer, clues } = createGame();
+    const innocentAccusations = clues.filter(
+      c => c.accusation === true && c.speaker.name !== answer.suspect.name
+    );
+    expect(innocentAccusations).toHaveLength(2);
+  });
+
+  it('exactly 2 silly-speaker clues (one per silly crewmate)', () => {
+    const { silly, clues } = createGame();
+    const sillyNames = new Set([silly[0].name, silly[1].name]);
+    const sillyClues = clues.filter(c => sillyNames.has(c.speaker.name));
+    expect(sillyClues).toHaveLength(2);
+    // one clue per silly crewmate
+    const seen = new Set(sillyClues.map(c => c.speaker.name));
+    expect(seen.size).toBe(2);
+  });
+
+  it('no roomHint phrases in base clues', () => {
+    const { clues } = createGame();
+    for (const clue of clues) {
+      for (const phrase of ROOM_HINT_PHRASES) {
+        expect(clue.text).not.toContain(phrase);
+      }
+    }
+  });
+
+  it('extraHints has exactly 5 entries', () => {
+    const { extraHints } = createGame();
+    expect(extraHints).toHaveLength(5);
+  });
+
+  it('all extraHints have non-empty text', () => {
+    const { extraHints } = createGame();
+    for (const hint of extraHints) {
+      expect(typeof hint.text).toBe('string');
+      expect(hint.text.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('extraHints[3] (4th) has accusation: true', () => {
+    const { extraHints } = createGame();
+    expect(extraHints[3].accusation).toBe(true);
+  });
+
+  it('extraHints[0] (weapon elimination) does NOT mention the murder weapon name', () => {
+    const { answer, extraHints } = createGame();
+    expect(extraHints[0].text).not.toContain(answer.weapon.name);
+  });
+
+  it('extraHints[1] (body found) DOES mention the murder room name', () => {
+    const { answer, extraHints } = createGame();
+    expect(extraHints[1].text).toContain(answer.room.name);
+  });
+
+  it('extraHints[3] (direct accusation) DOES mention the killer name', () => {
+    const { answer, extraHints } = createGame();
+    expect(extraHints[3].text).toContain(answer.suspect.name);
+  });
+});
