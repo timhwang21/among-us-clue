@@ -30,7 +30,9 @@ canvas#stars {
 .screen.active { display: flex; flex-direction: column; align-items: center; }
 
 /* =========== TITLE =========== */
-#title-screen { justify-content: center; text-align: center; gap: 16px; }
+#title-screen { justify-content: center; text-align: center; gap: 16px; position: relative; overflow: hidden; }
+#title-crew-container { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+#title-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 
 .title-logo {
   font-family: 'Orbitron', sans-serif; font-weight: 900;
@@ -258,6 +260,9 @@ canvas#stars {
   font-size: 0.72em; letter-spacing: 2px; color: #555; padding: 8px 14px 4px;
   text-transform: uppercase;
 }
+.clue-item.hint-unrevealed { opacity: 0.45; border-left: 2px dashed rgba(255,255,255,0.12); padding-left: 12px; }
+.clue-item.hint-unrevealed:hover { opacity: 0.45; background: none; cursor: default; }
+.hint-unrevealed-label { font-size: 0.75em; color: #444; margin-left: 4px; }
 
 .result-badge { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(1.6em, 5vw, 2.8em); }
 .badge-win  { color: #44ff88; text-shadow: 0 0 30px rgba(68,255,136,0.8); }
@@ -346,29 +351,30 @@ canvas#stars {
      TITLE SCREEN
      ============================================================ -->
 <div id="title-screen" class="screen active">
-  <div class="title-logo">
-    <div class="title-red">AMONG US</div>
-    <div class="title-white">🔍 MYSTERY 🔍</div>
-  </div>
+  <div id="title-crew-container"></div>
+  <div id="title-content">
+    <div class="title-logo">
+      <div class="title-red">AMONG US</div>
+      <div class="title-white">🔍 MYSTERY 🔍</div>
+    </div>
 
-  <div class="subtitle">
-    A crewmate has been murdered aboard the Skeld!<br>
-    Can YOU figure out who did it?
-  </div>
+    <div class="subtitle">
+      A crewmate has been murdered aboard the Skeld!<br>
+      Can YOU figure out who did it?
+    </div>
 
-  <div class="crewmates-row" id="title-crew"></div>
+    <button class="btn btn-primary" onclick="startGame()" style="font-size:1.1em;padding:16px 44px">
+      🚀 Start Investigation
+    </button>
 
-  <button class="btn btn-primary" onclick="startGame()" style="font-size:1.1em;padding:16px 44px">
-    🚀 Start Investigation
-  </button>
-
-  <div class="how-to-play">
-    <strong>How to Play:</strong>
-    🔍 Press <strong>Reveal Evidence</strong> to uncover clues one by one<br>
-    🚩 Click a name to mark it as <em>suspicious</em> or <em>safe</em><br>
-    🎯 Make your accusation when you know the answer!<br>
-    🆘 Once all evidence is revealed, extra hints are available — but risky...<br>
-    <span class="warn">⚠️ Warning: Not all the evidence may be true! The impostor lies!</span>
+    <div class="how-to-play">
+      <strong>How to Play:</strong>
+      🔍 Press <strong>Reveal Evidence</strong> to uncover clues one by one<br>
+      🚩 Click a name to mark it as <em>suspicious</em> or <em>safe</em><br>
+      🎯 Make your accusation when you know the answer!<br>
+      🆘 Once all evidence is revealed, extra hints are available — but risky...<br>
+      <span class="warn">⚠️ Warning: Not all the evidence may be true! The impostor lies!</span>
+    </div>
   </div>
 </div>
 
@@ -506,6 +512,8 @@ function crewSVG(color, dark, w) {
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById(name + '-screen').classList.add('active');
+  if (name === 'title') startTitleAnimation();
+  else stopTitleAnimation();
 }
 
 // ================================================================
@@ -829,14 +837,30 @@ function showResult(correct) {
 function populateResultLog() {
   document.getElementById('result-log-clues').innerHTML =
     document.getElementById('clues-list').innerHTML;
-  var hintItems = document.getElementById('extra-hints-list');
+
+  var hintsList = document.getElementById('result-log-hints-list');
   var hintsSection = document.getElementById('result-log-hints');
-  if (hintItems && hintItems.children.length > 0) {
-    document.getElementById('result-log-hints-list').innerHTML = hintItems.innerHTML;
-    hintsSection.style.display = 'block';
-  } else {
-    hintsSection.style.display = 'none';
-  }
+  hintsSection.style.display = 'block';
+  hintsList.innerHTML = extraHints.map(function(hint, i) {
+    var revealed = i < extraHintIdx;
+    var deadClass = hint.dead ? ' clue-dead' : '';
+    var unrevClass = revealed ? '' : ' hint-unrevealed';
+    var speakerHTML = '';
+    if (hint.speaker) {
+      var angryClass = hint.accusation ? ' angry' : '';
+      var label = hint.dead ? '👻 ' + hint.speaker.name : hint.speaker.name;
+      speakerHTML = '<span class="clue-speaker" style="color:' + hint.speaker.color + '">'
+        + '<span class="clue-crew-icon' + angryClass + '">' + crewSVG(hint.speaker.color, hint.speaker.dark, 18) + '</span>'
+        + label + '</span>';
+    } else {
+      speakerHTML = '<span class="extra-hint-label">🆘 EXTRA HINT</span>';
+    }
+    return '<div class="clue-item extra-hint-item' + deadClass + unrevClass + '">'
+      + '<span class="clue-num">' + (i + 1) + (revealed ? '' : '<span class="hint-unrevealed-label"> 🔒</span>') + '</span>'
+      + '<div class="clue-body">' + speakerHTML
+      + '<span class="clue-speech">' + hint.text + '</span>'
+      + '</div></div>';
+  }).join('');
 }
 
 function triggerShake() {
@@ -865,6 +889,79 @@ function spawnConfetti() {
         setTimeout(function(){ el.remove(); }, 4200);
       }, delay);
     })(i * 28);
+  }
+}
+
+// ================================================================
+//  TITLE CREW ANIMATION
+// ================================================================
+var _titleRaf = null;
+var _titleCrew = null;
+
+function startTitleAnimation() {
+  if (_titleRaf) return;
+  var container = document.getElementById('title-crew-container');
+  container.innerHTML = '';
+  var allCrew = SUSPECTS.concat(EXTRAS);
+  var W = window.innerWidth, H = window.innerHeight;
+
+  _titleCrew = allCrew.map(function(c) {
+    var el = document.createElement('div');
+    el.style.cssText = 'position:absolute;top:0;left:0;will-change:transform;';
+    container.appendChild(el);
+    var baseSize = 36 + Math.random() * 32;
+    var speed    = 0.15 + Math.random() * 0.45;
+    var angle    = Math.random() * Math.PI * 2;
+    return {
+      el:         el,
+      color:      c.color,
+      dark:       c.dark,
+      x:          Math.random() * W,
+      y:          Math.random() * H,
+      vx:         Math.cos(angle) * speed,
+      vy:         Math.sin(angle) * speed,
+      rot:        Math.random() * 360,
+      rotSpd:     (Math.random() - 0.5) * 0.25,
+      scale:      0.4 + Math.random() * 1.1,
+      scaleSpd:   (Math.random() < 0.5 ? 1 : -1) * (0.0008 + Math.random() * 0.0012),
+      baseSize:   baseSize,
+      lastSize:   -1,
+    };
+  });
+
+  function tick() {
+    var W = window.innerWidth, H = window.innerHeight;
+    _titleCrew.forEach(function(c) {
+      c.x   += c.vx;
+      c.y   += c.vy;
+      c.rot += c.rotSpd;
+      c.scale += c.scaleSpd;
+      if (c.scale > 1.5)  { c.scale = 1.5;  c.scaleSpd *= -1; }
+      if (c.scale < 0.25) { c.scale = 0.25; c.scaleSpd *= -1; }
+      var pad = 80;
+      if (c.x < -pad) c.x = W + pad * 0.5;
+      if (c.x > W + pad) c.x = -pad * 0.5;
+      if (c.y < -pad) c.y = H + pad * 0.5;
+      if (c.y > H + pad) c.y = -pad * 0.5;
+      var sz = Math.round(c.baseSize * c.scale);
+      if (sz !== c.lastSize) {
+        c.el.innerHTML = crewSVG(c.color, c.dark, sz);
+        c.lastSize = sz;
+      }
+      c.el.style.opacity   = (0.18 + c.scale * 0.28).toFixed(2);
+      c.el.style.transform = 'translate(' + c.x.toFixed(1) + 'px,' + c.y.toFixed(1) + 'px) rotate(' + c.rot.toFixed(1) + 'deg)';
+    });
+    _titleRaf = requestAnimationFrame(tick);
+  }
+  _titleRaf = requestAnimationFrame(tick);
+}
+
+function stopTitleAnimation() {
+  if (_titleRaf) { cancelAnimationFrame(_titleRaf); _titleRaf = null; }
+  if (_titleCrew) {
+    var container = document.getElementById('title-crew-container');
+    if (container) container.innerHTML = '';
+    _titleCrew = null;
   }
 }
 
@@ -915,6 +1012,7 @@ document.getElementById('title-crew').innerHTML =
   SUSPECTS.concat(EXTRAS).map(s => crewSVG(s.color, s.dark, 58)).join('');
 
 Object.assign(window, { startGame, submitAccusation, getExtraHint, cycleMark, cycleClue, showScreen, downloadLog });
+startTitleAnimation();
 </script>
 </body>
 </html>

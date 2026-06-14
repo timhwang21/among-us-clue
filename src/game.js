@@ -17,8 +17,10 @@ export function buildClues(answer, victim, silly) {
   const core = [
     { speaker: A, text: rand(TMPL.alibi)(lieRoom.name) },
     { speaker: B, text: rand(TMPL.backing)(A.name, lieRoom.name) },
+    { speaker: A, text: rand(TMPL.backing)(B.name, lieRoom.name) },
     { speaker: C, text: rand(TMPL.alibi)(cdRoom.name) },
     { speaker: D, text: rand(TMPL.backing)(C.name, cdRoom.name) },
+    { speaker: C, text: rand(TMPL.backing)(D.name, cdRoom.name) },
     { speaker: answer.suspect, text: rand(TMPL.killerLie)(killerFakeRoom.name) },
     { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(D.name), accusation: true },
     { speaker: D, text: rand(TMPL.roomCorr)(answer.room.name) },
@@ -38,8 +40,9 @@ export function buildClues(answer, victim, silly) {
   if (rhRooms.length > 1)
     rh.push({ speaker: D, text: rand(TMPL.rhRoom)(B.name, rhRooms[1].name) });
 
-  rh.push({ speaker: silly[0], text: rand(SILLY_LINES) });
-  rh.push({ speaker: silly[1], text: rand(SILLY_LINES) });
+  const sillyPool = shuffle([A, B, C, D, answer.suspect]);
+  rh.push({ speaker: sillyPool[0], text: rand(SILLY_LINES) });
+  rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES) });
   rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true });
 
   const accusers = shuffle([A, B, C, D]);
@@ -68,19 +71,19 @@ export function buildExtraHints(answer, trustChain, victim) {
   });
 
   hints.push({
-    speaker: tc.A,
-    text: rand(TMPL.backing)(tc.B.name, tc.lieRoom.name),
+    speaker: tc.D,
+    text: rand(TMPL.rhBehavior)(answer.suspect.name),
   });
 
   hints.push({
-    speaker: tc.A,
-    text: rand(TMPL.accusation)(answer.suspect.name, tc.killerFakeRoom.name),
+    speaker: tc.B,
+    text: rand(TMPL.killerContradict)(answer.suspect.name, tc.killerFakeRoom.name),
     accusation: true,
   });
 
   hints.push({
-    speaker: tc.C,
-    text: rand(TMPL.backing)(tc.D.name, tc.cdRoom.name),
+    speaker: tc.A,
+    text: rand(TMPL.rhBehavior)(answer.suspect.name),
   });
 
   const revealRoom = Math.random() < 0.5;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createGame } from '../src/game.js';
-import { SUSPECTS, EXTRAS, ROOMS, WEAPONS } from '../src/data.js';
+import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, SILLY_LINES } from '../src/data.js';
 
 const ROOM_HINT_PHRASES = [
   'found the body',
@@ -84,20 +84,28 @@ describe('createGame', () => {
     expect(innocentAccusations).toHaveLength(2);
   });
 
-  it('exactly 2 silly-speaker clues (one per silly crewmate)', () => {
-    const { silly, clues } = createGame();
-    const sillyNames = new Set([silly[0].name, silly[1].name]);
-    const sillyClues = clues.filter(c => sillyNames.has(c.speaker.name));
+  it('exactly 2 silly lines appear in base clues', () => {
+    const { clues } = createGame();
+    const sillyClues = clues.filter(c => SILLY_LINES.includes(c.text));
     expect(sillyClues).toHaveLength(2);
-    // one clue per silly crewmate
-    const seen = new Set(sillyClues.map(c => c.speaker.name));
-    expect(seen.size).toBe(2);
   });
 
   it('exactly 1 guardian angel clue from victim with dead: true', () => {
     const { victim, clues } = createGame();
     const ghostClues = clues.filter(c => c.speaker.name === victim.name && c.dead === true);
     expect(ghostClues).toHaveLength(1);
+  });
+
+  it('both alibi pairs have mutual backing in base clues', () => {
+    const { trustChain, clues } = createGame();
+    const { A, B, C, D } = trustChain;
+    const speakerTexts = name => clues.filter(c => c.speaker.name === name).map(c => c.text);
+    // A backs B and B backs A in base clues
+    expect(speakerTexts(A.name).some(t => t.includes(B.name))).toBe(true);
+    expect(speakerTexts(B.name).some(t => t.includes(A.name))).toBe(true);
+    // C backs D and D backs C in base clues
+    expect(speakerTexts(C.name).some(t => t.includes(D.name))).toBe(true);
+    expect(speakerTexts(D.name).some(t => t.includes(C.name))).toBe(true);
   });
 
   it('guardian angel base clue has no helpful keywords', () => {
@@ -146,9 +154,19 @@ describe('createGame', () => {
     expect(extraHints[1].text).toContain(answer.room.name);
   });
 
-  it('extraHints[3] (direct accusation) DOES mention the killer name', () => {
-    const { answer, extraHints } = createGame();
+  it('extraHints[3] (direct accusation) mentions killer name and killerFakeRoom', () => {
+    const { answer, trustChain, extraHints } = createGame();
     expect(extraHints[3].text).toContain(answer.suspect.name);
+    expect(extraHints[3].text).toContain(trustChain.killerFakeRoom.name);
+    expect(extraHints[3].speaker.name).toBe(trustChain.B.name);
+  });
+
+  it('extraHints[2] and [4] (behavioral) name the killer and have no accusation flag', () => {
+    const { answer, extraHints } = createGame();
+    expect(extraHints[2].text).toContain(answer.suspect.name);
+    expect(extraHints[4].text).toContain(answer.suspect.name);
+    expect(extraHints[2].accusation).toBeFalsy();
+    expect(extraHints[4].accusation).toBeFalsy();
   });
 
   it('last extraHint is guardian angel from victim with dead: true', () => {
