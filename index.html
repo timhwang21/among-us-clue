@@ -534,13 +534,17 @@ const _drag       = { active: false, fromEl: null, fromType: '', fromName: '', c
 function crewSVG(color, dark, w = 50) {
   const h = Math.round(w * 1.3);
   return `<svg width="${w}" height="${h}" viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">`
-    + `<rect x="16" y="50" width="53" height="58" rx="15" fill="${color}"/>`
-    + `<ellipse cx="43" cy="37" rx="30" ry="27" fill="${color}"/>`
-    + `<rect x="20" y="17" width="45" height="28" rx="10" fill="#aaddff" opacity="0.88"/>`
-    + `<ellipse cx="30" cy="27" rx="8" ry="5" fill="white" opacity="0.5"/>`
-    + `<rect x="68" y="54" width="15" height="28" rx="6" fill="${dark}"/>`
-    + `<rect x="19" y="102" width="19" height="20" rx="7" fill="${dark}"/>`
-    + `<rect x="45" y="102" width="19" height="20" rx="7" fill="${dark}"/>`
+    // Smooth bean/teardrop body — head and torso are one unified shape
+    + `<path d="M46,14 C24,14 12,30 12,54 C10,74 14,92 18,106 L82,106 C86,92 90,74 88,54 C86,30 68,14 46,14Z" fill="${color}"/>`
+    // Backpack (right side, protrudes beyond body edge)
+    + `<rect x="78" y="48" width="16" height="34" rx="7" fill="${dark}"/>`
+    // Visor (large oval, covers upper ~half of body)
+    + `<path d="M20,52 C20,35 32,24 48,24 C64,24 78,35 78,52 C78,63 67,71 50,71 C33,71 20,63 20,52Z" fill="#aaddf0" opacity="0.9"/>`
+    // Visor glare
+    + `<ellipse cx="34" cy="41" rx="10" ry="6" fill="white" opacity="0.45"/>`
+    // Legs
+    + `<rect x="18" y="102" width="24" height="22" rx="9" fill="${dark}"/>`
+    + `<rect x="54" y="102" width="24" height="22" rx="9" fill="${dark}"/>`
     + '</svg>';
 }
 
