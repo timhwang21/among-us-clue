@@ -371,16 +371,37 @@ canvas#stars {
 }
 
 /* =========== CHANGELOG =========== */
-.changelog-btn {
+.title-meta-btns {
   position: absolute; top: 12px; right: 12px;
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-end; z-index: 10;
+}
+.changelog-btn {
   font-family: 'Nunito', sans-serif; font-size: 0.75em; font-weight: 700;
   padding: 6px 12px; border-radius: 20px; cursor: pointer;
   background: rgba(255,255,255,0.06); color: #8888aa;
   border: 1px solid rgba(255,255,255,0.12);
   transition: background 0.2s;
-  z-index: 10;
 }
 .changelog-btn:hover { background: rgba(255,255,255,0.12); color: #aaaacc; }
+.history-entry {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.history-entry:last-child { border-bottom: none; }
+.history-outcome { font-size: 1.2em; flex-shrink: 0; width: 24px; text-align: center; }
+.history-info { flex: 1; min-width: 0; }
+.history-time { font-size: 0.72em; color: #666; margin-bottom: 2px; }
+.history-answer { font-size: 0.82em; color: #aab; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.history-btn {
+  font-family: 'Nunito', sans-serif; font-size: 0.72em; font-weight: 700;
+  padding: 4px 10px; border-radius: 14px; cursor: pointer;
+  background: rgba(255,255,255,0.06); color: #8888aa;
+  border: 1px solid rgba(255,255,255,0.12); transition: background 0.2s;
+}
+.history-btn:hover { background: rgba(255,255,255,0.14); color: #ccc; }
+.history-empty { color: #555; font-size: 0.88em; padding: 20px 0; text-align: center; }
+.history-delete-row { padding: 14px 0 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 6px; }
 
 .changelog-dialog {
   background: #13132e; color: #ccc; border: 1px solid rgba(255,255,255,0.15);
@@ -428,7 +449,10 @@ canvas#stars {
      ============================================================ -->
 <div id="title-screen" class="screen active">
   <div id="title-crew-container"></div>
-  <button class="changelog-btn" onclick="document.getElementById('changelog-dialog').showModal()">📋 Changelog</button>
+  <div class="title-meta-btns">
+    <button class="changelog-btn" onclick="document.getElementById('changelog-dialog').showModal()">📋 Changelog</button>
+    <button class="changelog-btn" onclick="openHistoryDialog()">🕹️ History</button>
+  </div>
   <div id="title-content">
     <div class="title-logo">
       <div class="title-red">AMONG US</div>
@@ -537,7 +561,6 @@ canvas#stars {
   <div class="btn-row">
     <button class="btn btn-primary" onclick="startGame()">🔄 Play Again</button>
     <button class="btn btn-secondary" onclick="showScreen('title')">🏠 Main Menu</button>
-    <button class="btn btn-secondary" onclick="downloadLog()">📥 Download Log</button>
   </div>
   <div id="result-log">
     <div class="result-log-header">EVIDENCE LOG</div>
@@ -568,6 +591,14 @@ canvas#stars {
   </div>
 </dialog>
 
+<dialog id="history-dialog" class="changelog-dialog">
+  <div class="changelog-dialog-header">
+    <h2>🕹️ GAME HISTORY</h2>
+    <button class="changelog-dialog-close" onclick="document.getElementById('history-dialog').close()">✕</button>
+  </div>
+  <div class="changelog-dialog-body" id="history-dialog-body"></div>
+</dialog>
+
 <script type="module">
 import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, KILL_RISKS } from './src/data.js';
 import { rand, shuffle } from './src/utils.js';
@@ -587,6 +618,7 @@ let marks         = { suspects: {}, rooms: {}, weapons: {} };
 let victim        = null;
 let silly         = [];
 let personalities = {};
+let trustChain    = {};
 let connections   = [];
 const _drag       = { active: false, fromEl: null, fromType: '', fromName: '', curX: 0, curY: 0 };
 
@@ -632,12 +664,14 @@ function startGame() {
   clues         = game.clues;
   extraHints    = game.extraHints;
   personalities = game.personalities || {};
+  trustChain    = game.trustChain || {};
   marks         = { suspects: {}, rooms: {}, weapons: {} };
   clueMarks     = [];
   clueRevealIdx = 0;
   extraHintIdx  = 0;
   killRisk      = 0;
   connections   = [];
+  _currentGameId = String(Date.now());
 
   fillSel('acc-suspect', SUSPECTS, s => s.name, s => s.name);
   fillSel('acc-room',    ROOMS,    r => r.name, r => `${r.emoji} ${r.name}`);
@@ -646,36 +680,170 @@ function startGame() {
   document.getElementById('extra-hints-section').style.display = 'none';
   document.getElementById('extra-hints-list').innerHTML = '';
 
-  logGame();
+  saveGame();
   renderBoard();
   renderClues();
   updateHintButton();
   showScreen('game');
 }
 
-function logGame() {
+// ================================================================
+//  GAME LOG
+// ================================================================
+let _currentGameId = null;
+
+function buildGameEntry(outcome = null) {
+  return {
+    id: _currentGameId,
+    ts: new Date().toISOString(),
+    outcome,
+    answer: { suspect: answer.suspect.name, room: answer.room.name, weapon: answer.weapon.name },
+    victim: victim.name,
+    silly: silly.map(s => s.name),
+    personalities,
+    trustChain: {
+      innocents: trustChain.innocents.map(s => s.name),
+      killerFakeRoom: trustChain.killerFakeRoom.name,
+      structure: trustChain.structure,
+    },
+    clues: clues.map(c => ({
+      speakerName: c.speaker.name,
+      text: c.text,
+      accusation: !!c.accusation,
+      dead: !!c.dead,
+      deductive: !!c.deductive,
+      personality: c.personality ?? null,
+    })),
+    extraHints: extraHints.map(h => ({
+      speakerName: h.speaker?.name ?? null,
+      text: h.text,
+      accusation: !!h.accusation,
+      dead: !!h.dead,
+    })),
+  };
+}
+
+function saveGame(outcome = null) {
   try {
-    const entry = {
-      ts: new Date().toISOString(),
-      answer: { suspect: answer.suspect.name, room: answer.room.name, weapon: answer.weapon.name },
-      victim: victim.name,
-      silly: silly.map(s => s.name),
-      clues: clues.map(c => ({ speaker: c.speaker.name, text: c.text, accusation: !!c.accusation })),
-      extraHints: extraHints.map(h => ({ speaker: h.speaker?.name ?? null, text: h.text, accusation: !!h.accusation })),
-    };
+    const entry = buildGameEntry(outcome);
     const log = JSON.parse(localStorage.getItem('gameLog') || '[]');
-    log.push(entry);
+    const idx = log.findIndex(e => e.id === _currentGameId);
+    if (idx >= 0) log[idx] = entry;
+    else log.push(entry);
     localStorage.setItem('gameLog', JSON.stringify(log));
   } catch(e) {}
 }
 
-// Call downloadLog() from the browser console to export the telemetry as a JSON file.
+function downloadGame(id) {
+  try {
+    const log = JSON.parse(localStorage.getItem('gameLog') || '[]');
+    const entry = log.find(e => e.id === id);
+    if (!entry) return;
+    const blob = new Blob([JSON.stringify(entry, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `among-us-clue-${entry.ts.slice(0, 10)}.json`;
+    a.click();
+  } catch(e) {}
+}
+
+function replayGame(id) {
+  try {
+    const log = JSON.parse(localStorage.getItem('gameLog') || '[]');
+    const saved = log.find(e => e.id === id);
+    if (!saved) return;
+    document.getElementById('history-dialog').close();
+
+    const allCrew = [...SUSPECTS, ...EXTRAS];
+    const findCrew = name => allCrew.find(c => c.name === name);
+
+    answer       = { suspect: findCrew(saved.answer.suspect), room: ROOMS.find(r => r.name === saved.answer.room), weapon: WEAPONS.find(w => w.name === saved.answer.weapon) };
+    victim       = findCrew(saved.victim);
+    silly        = saved.silly.map(findCrew);
+    personalities = saved.personalities;
+    trustChain   = {
+      innocents:      saved.trustChain.innocents.map(n => SUSPECTS.find(s => s.name === n)),
+      killerFakeRoom: ROOMS.find(r => r.name === saved.trustChain.killerFakeRoom),
+      structure:      saved.trustChain.structure,
+    };
+    clues        = saved.clues.map(c => ({ ...c, speaker: findCrew(c.speakerName) }));
+    extraHints   = saved.extraHints.map(h => ({ ...h, speaker: h.speakerName ? findCrew(h.speakerName) : null }));
+    marks        = { suspects: {}, rooms: {}, weapons: {} };
+    clueMarks    = [];
+    clueRevealIdx = 0;
+    extraHintIdx  = 0;
+    killRisk      = 0;
+    connections   = [];
+
+    _currentGameId = saved.id; // keep same id so replays don't duplicate
+
+    fillSel('acc-suspect', SUSPECTS, s => s.name, s => s.name);
+    fillSel('acc-room',    ROOMS,    r => r.name, r => `${r.emoji} ${r.name}`);
+    fillSel('acc-weapon',  WEAPONS,  w => w.name, w => `${w.emoji} ${w.name}`);
+
+    document.getElementById('extra-hints-section').style.display = 'none';
+    document.getElementById('extra-hints-list').innerHTML = '';
+
+    renderBoard();
+    renderClues();
+    updateHintButton();
+    showScreen('game');
+  } catch(e) { console.error('Replay failed', e); }
+}
+
+function openHistoryDialog() {
+  const log = JSON.parse(localStorage.getItem('gameLog') || '[]').slice().reverse();
+  const body = document.getElementById('history-dialog-body');
+
+  if (!log.length) {
+    body.innerHTML = '<div class="history-empty">No games played yet.</div>';
+    document.getElementById('history-dialog').showModal();
+    return;
+  }
+
+  const fmt = ts => {
+    const d = new Date(ts);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  };
+  const outcomeIcon = o => o === 'win' ? '🎉' : o === 'killed' ? '💀' : o === 'loss' ? '😔' : '—';
+
+  body.innerHTML = log.map(e => {
+    const susp = e.answer?.suspect ?? '?';
+    const room = e.answer?.room ?? '?';
+    const weapon = e.answer?.weapon ?? '?';
+    const color = SUSPECTS.find(s => s.name === susp)?.color ?? '#aaa';
+    return `<div class="history-entry">
+      <div class="history-outcome">${outcomeIcon(e.outcome)}</div>
+      <div class="history-info">
+        <div class="history-time">${fmt(e.ts)}</div>
+        <div class="history-answer"><span style="color:${color}">${susp}</span> · ${room} · ${weapon}</div>
+      </div>
+      <div class="history-actions">
+        <button class="history-btn" onclick="replayGame('${e.id}')">🔄 Replay</button>
+        <button class="history-btn" onclick="downloadGame('${e.id}')">📥</button>
+      </div>
+    </div>`;
+  }).join('')
+  + `<div class="history-delete-row">
+      <button class="history-btn" onclick="clearHistory()" style="color:#c06060;border-color:rgba(200,80,80,0.3)">🗑️ Delete all history</button>
+    </div>`;
+
+  document.getElementById('history-dialog').showModal();
+}
+
+function clearHistory() {
+  if (!confirm('Delete all game history? This cannot be undone.')) return;
+  localStorage.removeItem('gameLog');
+  document.getElementById('history-dialog').close();
+}
+
 function downloadLog() {
   const data = localStorage.getItem('gameLog') || '[]';
-  const blob = new Blob([data], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(JSON.parse(data), null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'game-log.json';
+  a.download = 'among-us-clue-history.json';
   a.click();
 }
 
@@ -979,6 +1147,7 @@ function answerRevealHTML(eject) {
 }
 
 function showKilled() {
+  saveGame('killed');
   document.getElementById('result-badge').className   = 'result-badge badge-lose';
   document.getElementById('result-badge').textContent = '💀 THE IMPOSTOR GOT YOU!';
   document.getElementById('result-card').innerHTML    =
@@ -994,6 +1163,7 @@ function showResult(correct) {
   const card  = document.getElementById('result-card');
 
   if (correct) {
+    saveGame('win');
     badge.className   = 'result-badge badge-win';
     badge.textContent = '🎉 YOU SOLVED IT!';
     card.innerHTML    = `<p>Amazing detective work! The crew is safe thanks to you! 🚀</p>${answerRevealHTML(true)}`;
@@ -1001,6 +1171,7 @@ function showResult(correct) {
     showScreen('result');
     spawnConfetti();
   } else {
+    saveGame('loss');
     badge.className   = 'result-badge badge-lose';
     badge.textContent = '💀 WRONG ACCUSATION!';
     card.innerHTML    = `<p>The crew voted you out of the airlock... 😔</p>`
@@ -1011,14 +1182,14 @@ function showResult(correct) {
   }
 }
 
-function speakerHTML(c, { angry = false, dead = false, deductive = null } = {}) {
+// personality is the per-clue field (only set on clues that came from a personality pool).
+function speakerHTML(c, { angry = false, dead = false, deductive = null, personality = null } = {}) {
   const label = dead ? `👻 ${c.name}` : c.name;
   let badge = '';
   if (deductive === true) {
     badge = '<span class="evidence-marker">🔍</span>';
-  } else {
-    const ptype = personalities[c.name];
-    badge = ptype ? `<span class="pers-badge ${ptype}">${ptype}</span>` : '';
+  } else if (personality) {
+    badge = `<span class="pers-badge ${personality}">${personality}</span>`;
   }
   return `<span class="clue-speaker" style="color:${c.color}">`
     + `<span class="clue-crew-icon${angry ? ' angry' : ''}">${crewSVG(c.color, c.dark, 18)}</span>`
@@ -1032,7 +1203,7 @@ function populateResultLog() {
     const deadClass = c.dead ? ' clue-dead' : '';
     return `<div class="clue-item${deadClass} ${MARK_STATES[m]}">`
       + `<span class="clue-num">${i + 1}</span>`
-      + `<div class="clue-body">${speakerHTML(c.speaker, { angry: !!c.accusation, dead: !!c.dead, deductive: c.deductive ?? null })}`
+      + `<div class="clue-body">${speakerHTML(c.speaker, { angry: !!c.accusation, dead: !!c.dead, deductive: c.deductive ?? null, personality: c.personality ?? null })}`
       + `<span class="clue-speech">${c.text}</span></div></div>`;
   }).join('');
 
@@ -1176,7 +1347,7 @@ function stopTitleAnimation() {
 // ================================================================
 //  INIT
 // ================================================================
-Object.assign(window, { startGame, submitAccusation, getExtraHint, cycleMark, cycleClue, showScreen, downloadLog });
+Object.assign(window, { startGame, submitAccusation, getExtraHint, cycleMark, cycleClue, showScreen, downloadLog, openHistoryDialog, replayGame, downloadGame, clearHistory });
 initNodeDrag();
 window.addEventListener('resize', drawLines);
 startTitleAnimation();

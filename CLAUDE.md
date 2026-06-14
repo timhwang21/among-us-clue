@@ -25,14 +25,21 @@ The PostToolUse hook in `.claude/settings.local.json` runs the smoke test automa
 This is a **single-file browser game** with no build step. Everything is served as plain files.
 
 ```
-index.html          — all CSS, HTML structure, and ~700 lines of UI JavaScript
+index.html          — all CSS, HTML, and UI JavaScript (~1350 lines)
 src/
-  data.js           — static game data: SUSPECTS, EXTRAS, ROOMS, WEAPONS, and all TMPL clue templates
-  game.js           — pure game logic: buildTrustStructure(), buildClues(), buildExtraHints(), createGame()
+  data.js           — SUSPECTS, EXTRAS, ROOMS, WEAPONS, TMPL templates, SILLY_LINES, PERSONALITY_LINES
+  facts.js          — abstract fact schema: vouch(), witness(), roomCorr(), etc.
+  game.js           — createGame() orchestrator: picks strategy, calls solver, assembles clues
+  render.js         — factToClue() + buildNoise() (flavor/personality clues)
+  solver.js         — inference engine: solve(), verify() (solvability + minimality)
   utils.js          — rand(arr), shuffle(arr)
+  strategies/
+    index.js        — STRATEGIES registry + pickStrategy()
+    twoPairs.js     — (+ chain, star, cycle, fork, loneWolf, yConverging, twoShortChains, negation)
 test/
-  game.test.js      — vitest unit tests for game logic
-  utils.test.js     — vitest unit tests for utils
+  game.test.js      — vitest unit tests for game logic + property tests (500 games)
+  solver.test.js    — solver unit tests
+  utils.test.js     — utils unit tests
   e2e/game.spec.js  — Playwright e2e tests
 scripts/smoke.sh    — PostToolUse hook script
 ```
@@ -42,18 +49,43 @@ scripts/smoke.sh    — PostToolUse hook script
 `index.html` uses `onclick="startGame()"` etc. on HTML elements. Since the game script runs as `<script type="module">`, all handler functions must be explicitly exported to `window`:
 
 ```js
-Object.assign(window, { startGame, submitAccusation, getExtraHint, cycleMark, cycleClue, showScreen, downloadLog });
+Object.assign(window, { startGame, submitAccusation, getExtraHint, cycleMark, cycleClue, showScreen, downloadLog, openHistoryDialog, replayGame, downloadGame, clearHistory });
 ```
 
 **Forgetting this causes the most common regression**: `startGame is not defined`.
 
 ### Game logic flow
 
-`createGame()` in `src/game.js` → `buildTrustStructure()` picks one of three patterns → `buildClues()` assembles core + red-herring clues → `buildExtraHints()` builds the progressive hint stack.
+`createGame()` in `src/game.js` → `buildClues()` picks a strategy from `src/strategies/` → assembles deductive facts → `buildNoise()` in `src/render.js` adds flavor clues → `buildExtraHints()` builds the progressive hint stack. Every game is validated by `src/solver.js` for solvability, uniqueness, and minimality before returning.
 
-The trust structures (randomly chosen per game) determine solvability — see `DESIGN.md` for the full design rationale. Key invariant: **the killer never appears as a voucher**. This means any suspect who vouches for someone is provably innocent.
+`createGame()` returns: `{ answer, victim, silly, clues, extraHints, trustChain, personalities }`.
+- `trustChain`: `{ innocents: Suspect[], killerFakeRoom: Room, structure: string }` — the deductive skeleton
+- `personalities`: `{ [suspectName]: 'silly'|'hysterical'|'peacemaker'|'salty'|'overconfident' }` — cosmetic only
 
-State lives in `index.html` globals: `answer`, `clues`, `clueMarks`, `clueRevealIdx`, `extraHints`, `marks`, `connections` (for drag-drawn lines), `_drag`.
+State lives in `index.html` globals: `answer`, `victim`, `silly`, `clues`, `clueMarks`, `clueRevealIdx`, `extraHints`, `extraHintIdx`, `marks`, `personalities`, `trustChain`, `connections` (for drag-drawn lines), `_drag`, `killRisk`.
+
+### Clue object shape
+
+Every clue (in `clues[]` and `extraHints[]`) has this shape:
+```js
+{
+  speaker: Suspect,        // full object from SUSPECTS/EXTRAS
+  text: string,
+  accusation?: boolean,    // shows angry icon
+  dead?: boolean,          // ghost speaker (victim only)
+  deductive: boolean,      // true = from deductive core (🔍 badge); false = flavor/noise
+  personality?: string,    // only set on clues drawn from personality-specific pools
+}
+```
+`personality` is set **per clue**, not per speaker — only clues drawn from `SILLY_LINES` or `PERSONALITY_LINES.*` carry it. A speaker with a personality can have both tagged and untagged clues.
+
+### Strategies
+
+Nine trust structures in `src/strategies/`: `twoPairs`, `chain`, `star`, `cycle`, `fork`, `loneWolf`, `yConverging`, `twoShortChains`, `negation`. Each exports a `build(innocents, rooms)` function returning `{ edges, killerFakeRoom }`. The registry is `src/strategies/index.js`.
+
+### Game log / history
+
+`saveGame(outcome?)` writes to `localStorage.gameLog` (array of entries). Called on game start with no outcome, then again on win/loss/killed to update outcome. The entry stores all names as strings; `replayGame(id)` reconstructs full objects by name from `SUSPECTS`/`EXTRAS`/`ROOMS`/`WEAPONS`. `openHistoryDialog()`, `replayGame()`, `downloadGame()`, `clearHistory()` are all window-exposed.
 
 ### Canvas lines overlay
 

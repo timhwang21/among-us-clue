@@ -48,7 +48,7 @@ Each crewmate is randomly assigned one of five personality types that flavors th
 | **Salty** | Bitter. Makes passive-aggressive remarks about the investigation. |
 | **Overconfident** | Smug. Confidently claims to have solved it — without sharing anything actionable. Distinct from hysterical: doesn't accuse anyone specifically, just makes self-satisfied assertions. |
 
-Each personality type appears at most twice per game. Some crewmates may have no personality. In the game-over evidence log, personality tags appear next to flavor speech; real evidence clues are marked with 🔍 instead.
+Each personality type appears at most twice per game. Some crewmates may have no personality. Personality tags appear **per message** in the evidence log — only on clues drawn from personality-specific text pools (`SILLY_LINES`, `PERSONALITY_LINES.*`). Real evidence clues from the deductive core are marked with 🔍 instead. A single speaker can have multiple non-tagged clues if those clues come from generic pools.
 
 ---
 

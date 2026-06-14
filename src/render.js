@@ -67,16 +67,17 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
     rh.push({ speaker: rand(innocents), text: rand(TMPL.weaponHint)(rhWeapon.name), deductive: false });
   }
 
-  // Silly flavor lines — silly-personality suspects get 2 lines, others get 1.
+  // Silly flavor lines drawn from SILLY_LINES pool — tagged as personality: 'silly'.
   const sillyPool = shuffle([...innocents, answer.suspect]);
   const sillyCount = personalities[sillyPool[0].name] === 'silly' ? 2 : 1;
-  for (let i = 0; i < sillyCount; i++) rh.push({ speaker: sillyPool[0], text: rand(SILLY_LINES), deductive: false });
-  if (sillyCount < 2) rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES), deductive: false });
+  for (let i = 0; i < sillyCount; i++) rh.push({ speaker: sillyPool[0], text: rand(SILLY_LINES), deductive: false, personality: 'silly' });
+  if (sillyCount < 2) rh.push({ speaker: sillyPool[1], text: rand(SILLY_LINES), deductive: false, personality: 'silly' });
 
   // Ghost/guardian angel flavor clue from victim.
   rh.push({ speaker: victim, text: rand(GUARDIAN_ANGEL_LINES), dead: true, deductive: false });
 
   // Hysterical accusations — accuser must not have personally vouched for their target.
+  // These come from the generic rhAccuse pool, not a personality pool, so no personality tag.
   const accuserBacked = (accuser, target) =>
     vouches.some(([from, to]) => from === accuser && to === target);
   let accusers;
@@ -85,22 +86,22 @@ export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurde
   rh.push({ speaker: accusers[0], text: rand(TMPL.rhAccuse)(accusers[0].name, accusers[1].name), accusation: true, deductive: false });
   rh.push({ speaker: accusers[2], text: rand(TMPL.rhAccuse)(accusers[2].name, accusers[3].name), accusation: true, deductive: false });
 
-  // Personality flavor: one extra line per personality-typed suspect.
+  // Personality flavor: one extra line per personality-typed suspect, tagged with their personality.
   const allCrewmates = [...innocents, answer.suspect];
   for (const crewmate of allCrewmates) {
     const ptype = personalities[crewmate.name];
     if (!ptype) continue;
     if (ptype === 'silly') {
-      rh.push({ speaker: crewmate, text: rand(SILLY_LINES), deductive: false });
+      rh.push({ speaker: crewmate, text: rand(SILLY_LINES), deductive: false, personality: 'silly' });
     } else if (ptype === 'hysterical') {
       const targets = allCrewmates.filter(c => c.name !== crewmate.name);
-      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.hysterical)(rand(targets).name), accusation: true, deductive: false });
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.hysterical)(rand(targets).name), accusation: true, deductive: false, personality: 'hysterical' });
     } else if (ptype === 'peacemaker') {
-      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.peacemaker), deductive: false });
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.peacemaker), deductive: false, personality: 'peacemaker' });
     } else if (ptype === 'salty') {
-      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.salty), deductive: false });
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.salty), deductive: false, personality: 'salty' });
     } else if (ptype === 'overconfident') {
-      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.overconfident), deductive: false });
+      rh.push({ speaker: crewmate, text: rand(PERSONALITY_LINES.overconfident), deductive: false, personality: 'overconfident' });
     }
   }
 
