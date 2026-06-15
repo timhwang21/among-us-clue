@@ -32,7 +32,7 @@ src/
   strategies/       — one file per trust structure (9 total)
 test/
   game.test.js      — createGame() shape and invariant tests
-  solver.test.js    — solver unit tests + property tests across 500 games
+  solver.test.js    — solver unit tests
   e2e/game.spec.js  — Playwright end-to-end tests
 ```
 

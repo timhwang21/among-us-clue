@@ -36,36 +36,24 @@ export function factToClue(fact, answer) {
       return [{ speaker: fact.speaker, text: rand(TMPL.weaponHint)(answer.weapon.name), deductive: true }];
 
     case TYPE.WEAPON_ELIM:
-      // weaponElim is only used as an extra hint; not rendered inline.
-      return [];
+      return [{ speaker: fact.speaker, text: rand(TMPL.weaponElim)(fact.weapon.name), deductive: true }];
 
     default:
       return [];
   }
 }
 
-// Build the non-deductive noise clues: silly, ghost flavor, behavioral red herrings,
-// hysterical accusations, weapon/room corroboration red herrings, personality flavor.
-export function buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurderWeapons, personalities = {} }) {
+// Build the non-deductive noise clues: silly, ghost flavor, room red herrings, personality flavor.
+// Weapon noise clues are intentionally omitted — innocents formally account for all non-murder
+// weapons via deductive weaponElim facts, and contradictory noise would confuse the deduction.
+export function buildNoise({ innocents, answer, victim, nonMurderRooms, personalities = {} }) {
   const rh = [];
-  const shuffledInnocents = shuffle(innocents.slice());
-  const [sp0, sp1, sp2, sp3] = shuffledInnocents;
+  const [sp0, , , sp3] = shuffle(innocents.slice());
 
-  // Red-herring weapon/room corroboration clues pointing to wrong answers.
+  // Room red herring: one innocent places another in a wrong room.
   const rhRooms = shuffle(nonMurderRooms.slice());
-  if (nonMurderWeapons.length && rhRooms.length)
-    rh.push({ speaker: sp0, text: rand(TMPL.weaponCorr)(rand(nonMurderWeapons).name, rhRooms[0].name), deductive: false });
-  if (nonMurderWeapons.length > 1)
-    rh.push({ speaker: sp1, text: rand(TMPL.rhWeapon)(sp2.name, nonMurderWeapons[1].name), deductive: false });
-  if (rhRooms.length > 1)
-    rh.push({ speaker: sp3, text: rand(TMPL.rhRoom)(sp0.name, rhRooms[1].name), deductive: false });
-
-  // Fake weapon-missing clue: one innocent reports a non-murder weapon missing, creating
-  // uncertainty about which missing-weapon claim is the real evidence.
-  if (nonMurderWeapons.length) {
-    const rhWeapon = rand(nonMurderWeapons);
-    rh.push({ speaker: rand(innocents), text: rand(TMPL.weaponHint)(rhWeapon.name), deductive: false });
-  }
+  if (rhRooms.length)
+    rh.push({ speaker: sp3, text: rand(TMPL.rhRoom)(sp0.name, rhRooms[0].name), deductive: false });
 
   // Personality flavor: one extra line per personality-typed crewmate (includes victim via 'dead').
   const allCrewmates = [...innocents, answer.suspect, victim];

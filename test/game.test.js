@@ -67,10 +67,10 @@ describe('createGame', () => {
     expect(killerAccusations.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('all innocent accusation clues have personality hysterical', () => {
+  it('all non-deductive innocent accusation clues have personality hysterical', () => {
     const { answer, clues } = createGame();
     const innocentAccusations = clues.filter(
-      c => c.accusation === true && c.speaker.name !== answer.suspect.name
+      c => c.accusation === true && !c.deductive && c.speaker.name !== answer.suspect.name
     );
     for (const c of innocentAccusations) {
       expect(c.personality).toBe('hysterical');
@@ -134,9 +134,9 @@ describe('createGame', () => {
     expect(extraHints[3].accusation).toBeFalsy();
   });
 
-  it('extraHints[0] (weapon elimination) does NOT mention the murder weapon name', () => {
+  it('extraHints[0] (behavioral) names the killer', () => {
     const { answer, extraHints } = createGame();
-    expect(extraHints[0].text).not.toContain(answer.weapon.name);
+    expect(extraHints[0].text).toContain(answer.suspect.name);
   });
 
   it('extraHints[1] (body found) DOES mention the murder room name', () => {

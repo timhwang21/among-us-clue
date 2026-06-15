@@ -1,3 +1,7 @@
+## 2026-06-15
+
+- Weapon deduction is now a proper elimination puzzle: crewmates account for specific weapons they had, and the murder weapon is the one no one can vouch for.
+- The impostor's fake alibi is now always challenged in the base clues by a crewmate who was actually there — no extra hints needed to spot the lie.
 ## 2026-06-14
 
 - The crewmates got a new look! They now look more like the crewmates you know from Among Us.

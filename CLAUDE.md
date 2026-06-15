@@ -37,7 +37,7 @@ src/
     index.js        — STRATEGIES registry + pickStrategy()
     twoPairs.js     — (+ chain, star, cycle, fork, loneWolf, yConverging, twoShortChains, negation)
 test/
-  game.test.js      — vitest unit tests for game logic + property tests (500 games)
+  game.test.js      — vitest unit tests for game logic and invariants
   solver.test.js    — solver unit tests
   utils.test.js     — utils unit tests
   e2e/game.spec.js  — Playwright e2e tests

@@ -52,6 +52,8 @@ function solve(facts) {
       }
 
       if (f.type === TYPE.WEAPON_ELIM) {
+        // Only fires once the speaker is proven innocent (same deductive gate as WITNESS/NEGATION).
+        if (f.speaker && !innocents.has(f.speaker.name)) continue;
         if (!elimWeapons.has(f.weapon.name)) { elimWeapons.add(f.weapon.name); firedFacts.add(f); changed = true; }
       }
     }
@@ -129,6 +131,7 @@ function candidateConsistent(facts, { suspect, room, weapon }) {
       if (f.room.name === room.name) return false;
     }
     if (f.type === TYPE.WEAPON_ELIM) {
+      if (f.speaker && !provenInnocent.has(f.speaker.name)) continue;
       if (f.weapon.name === weapon.name) return false;
     }
     if (f.type === TYPE.WITNESS) {
@@ -148,10 +151,11 @@ function candidateConsistent(facts, { suspect, room, weapon }) {
 }
 
 // Minimality check for closing facts (witness, roomCorr, weaponHint, weaponElim).
-// Vouch edges define the structural strategy signature and are intentionally redundant in
-// some patterns (two-pairs mutual backing, cycle, fork cross-corroboration) — they're exempt.
+// Vouch edges and NEGATION are exempt: vouch edges are intentionally redundant in some strategy
+// patterns, and negation is always included as a structural alibi-debunk even when redundant
+// for elimination strategies.
 function isMinimal(facts, answer) {
-  const closingTypes = new Set([TYPE.WITNESS, TYPE.NEGATION, TYPE.ROOM_CORR, TYPE.WEAPON_HINT, TYPE.WEAPON_ELIM]);
+  const closingTypes = new Set([TYPE.WITNESS, TYPE.ROOM_CORR, TYPE.WEAPON_HINT, TYPE.WEAPON_ELIM]);
   for (const f of facts) {
     if (!closingTypes.has(f.type)) continue;
     const without = facts.filter(x => x !== f);

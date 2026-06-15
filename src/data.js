@@ -197,6 +197,13 @@ export const TMPL = {
     w => `"Someone moved the ${w}. It wasn't where we keep it."`,
     w => `"The ${w} is unaccounted for. I looked everywhere and couldn't find it."`,
   ],
+  weaponElim: [
+    w => `"I had the ${w} for repairs most of this shift. It's accounted for."`,
+    w => `"The ${w} was with me the whole time — I returned it to storage myself."`,
+    w => `"I checked on the ${w} earlier. It's right where it should be."`,
+    w => `"I was using the ${w} for a task. I can personally account for it."`,
+    w => `"The ${w} is fine — I had it all shift for assigned maintenance."`,
+  ],
   weaponCorr: [
     (w, r) => `"I noticed a ${w} near ${r} earlier. I don't remember it being there before."`,
     (w, r) => `"There was a ${w} on the floor near ${r}. I just walked past it — didn't think much of it."`,

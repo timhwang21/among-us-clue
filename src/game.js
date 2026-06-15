@@ -1,6 +1,6 @@
 import { SUSPECTS, EXTRAS, ROOMS, WEAPONS, TMPL, INVESTIGATION } from './data.js';
 import { rand, shuffle, deconflictConsecutive } from './utils.js';
-import { vouch, witness, negation, roomCorr, weaponHint } from './facts.js';
+import { vouch, witness, negation, roomCorr, weaponElim } from './facts.js';
 import { pickStrategy } from './strategies/index.js';
 import { factToClue, buildNoise } from './render.js';
 import { verify } from './solver.js';
@@ -31,8 +31,15 @@ export function buildClues(answer, victim, personalities) {
     // Determine proven innocents from the vouch edges (to pick speakers for corroboration).
     const provenInnocents = getProvenInnocents(edges, innocents);
 
+    // Assign non-murder weapons to proven innocents (cyclic; some innocents get 2).
+    const shuffledNMW = shuffle(nonMurderWeapons.slice());
+    const weaponAssignments = new Map(provenInnocents.map(p => [p.name, []]));
+    shuffledNMW.forEach((w, i) =>
+      weaponAssignments.get(provenInnocents[i % provenInnocents.length].name).push(w)
+    );
+
     // Build the minimal deductive fact set.
-    const [corrSpeaker, hintSpeaker] = shuffle(provenInnocents.slice());
+    const [corrSpeaker] = shuffle(provenInnocents.slice());
     const coreFacts = [...edges];
 
     if (strategy.id === 'lone-wolf') {
@@ -42,14 +49,17 @@ export function buildClues(answer, victim, personalities) {
       coreFacts.push(witness(witnessSpeaker, 'suspect', answer.suspect));
     }
 
-    if (strategy.requiresNegation) {
-      // Negation-testimony: a proven innocent contradicts the killer's fake alibi.
-      const negationSpeaker = rand(provenInnocents);
-      coreFacts.push(negation(negationSpeaker, answer.suspect, result.killerFakeRoom));
-    }
+    // Always debunk the killer's fake alibi via a proven innocent.
+    const negationSpeaker = rand(provenInnocents);
+    coreFacts.push(negation(negationSpeaker, answer.suspect, killerFakeRoom));
 
     coreFacts.push(roomCorr(corrSpeaker, answer.room));
-    coreFacts.push(weaponHint(hintSpeaker, answer.weapon));
+
+    // Each proven innocent accounts for their assigned weapons; murder weapon identified by elimination.
+    for (const [innocentName, weapons] of weaponAssignments) {
+      const innocent = provenInnocents.find(p => p.name === innocentName);
+      for (const w of weapons) coreFacts.push(weaponElim(innocent, w));
+    }
 
     const err = verify(coreFacts, answer);
     if (err) continue;
@@ -63,7 +73,7 @@ export function buildClues(answer, victim, personalities) {
       { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(rand(innocents).name), accusation: true, deductive: false },
     ];
 
-    const noiseClues = buildNoise({ innocents, answer, victim, nonMurderRooms, nonMurderWeapons, personalities });
+    const noiseClues = buildNoise({ innocents, answer, victim, nonMurderRooms, personalities });
 
     const clues = deconflictConsecutive(shuffle([...deductiveClues, ...decorative, ...noiseClues]), c => c.speaker.name);
     const trustChain = { innocents, killerFakeRoom, structure: strategy.id };
@@ -75,13 +85,9 @@ export function buildClues(answer, victim, personalities) {
 
 export function buildExtraHints(answer, trustChain, victim) {
   const { killerFakeRoom } = trustChain;
-  const nonWeapons = WEAPONS.filter(w => w.name !== answer.weapon.name);
   const hints = [];
 
-  if (nonWeapons.length) {
-    const sw = rand(nonWeapons);
-    hints.push({ speaker: null, text: rand(INVESTIGATION.weaponElim)(sw.name, sw.emoji) });
-  }
+  hints.push({ speaker: null, text: rand(INVESTIGATION.suspectBehavior)(answer.suspect.name) });
 
   hints.push({ speaker: null, text: rand(INVESTIGATION.bodyLocation)(answer.room.name) });
   hints.push({ speaker: null, text: rand(INVESTIGATION.suspectBehavior)(answer.suspect.name) });
