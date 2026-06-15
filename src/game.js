@@ -21,6 +21,8 @@ export function buildClues(answer, victim, personalities) {
   const nonMurderRooms   = ROOMS.filter(r => r.name !== answer.room.name);
   const nonMurderWeapons = WEAPONS.filter(w => w.name !== answer.weapon.name);
   const shuffledNMR      = shuffle(nonMurderRooms.slice());
+  // Decided once per game — strategies that require negation always get it regardless.
+  const wantNegation = Math.random() < 0.25;
 
   for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
     const strategy = pickStrategy();
@@ -49,11 +51,18 @@ export function buildClues(answer, victim, personalities) {
       coreFacts.push(witness(witnessSpeaker, 'suspect', answer.suspect));
     }
 
-    // Prefer innocents with a known room (appears as vouch target) so the killer can counter-deny.
-    const vouchedInnocents = provenInnocents.filter(p => edges.some(e => e.to.name === p.name));
-    const negationSpeaker = rand(vouchedInnocents.length ? vouchedInnocents : provenInnocents);
-    const negSpeakerRoom = edges.find(e => e.to.name === negationSpeaker.name)?.room;
-    coreFacts.push(negation(negationSpeaker, answer.suspect, killerFakeRoom));
+    // Negation: a proven innocent contradicts the killer's fake alibi. Only included in ~25% of
+    // games (for variety); strategies that can't be solved without it always get it.
+    const includeNegation = wantNegation || strategy.requiresNegation;
+    let negationSpeaker = null;
+    let negSpeakerRoom  = null;
+    if (includeNegation) {
+      // Prefer innocents with a known room (vouch target) so the killer can counter-deny.
+      const vouchedInnocents = provenInnocents.filter(p => edges.some(e => e.to.name === p.name));
+      negationSpeaker = rand(vouchedInnocents.length ? vouchedInnocents : provenInnocents);
+      negSpeakerRoom  = edges.find(e => e.to.name === negationSpeaker.name)?.room;
+      coreFacts.push(negation(negationSpeaker, answer.suspect, killerFakeRoom));
+    }
 
     coreFacts.push(roomCorr(corrSpeaker, answer.room));
 
