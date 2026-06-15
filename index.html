@@ -621,6 +621,7 @@ let personalities = {};
 let trustChain    = {};
 let connections   = [];
 const _drag       = { active: false, fromEl: null, fromType: '', fromName: '', curX: 0, curY: 0 };
+const _hover      = { type: null, name: null }; // node currently moused-over (dims non-incident lines)
 
 // ================================================================
 //  SVG HELPERS
@@ -1019,7 +1020,8 @@ function renderList(containerId, items, type, innerFn) {
 // ================================================================
 function initNodeDrag() {
   for (const id of ['suspects-list', 'rooms-list', 'weapons-list']) {
-    document.getElementById(id).addEventListener('mousedown', e => {
+    const list = document.getElementById(id);
+    list.addEventListener('mousedown', e => {
       const node = e.target.closest('.opt-node');
       if (!node) return;
       e.preventDefault();
@@ -1033,7 +1035,19 @@ function initNodeDrag() {
       document.addEventListener('mousemove', onNodeDragMove);
       document.addEventListener('mouseup',   onNodeDragEnd);
     });
+    list.addEventListener('mouseover', e => setHoverNode(e.target.closest('.opt-node')));
+    list.addEventListener('mouseleave', () => setHoverNode(null));
   }
+}
+
+// Track the moused-over node so drawLines can dim lines not incident to it.
+function setHoverNode(node) {
+  const type = node ? node.dataset.type : null;
+  const name = node ? node.dataset.name : null;
+  if (_hover.type === type && _hover.name === name) return;
+  _hover.type = type;
+  _hover.name = name;
+  drawLines();
 }
 
 function onNodeDragMove(e) {
@@ -1091,14 +1105,19 @@ function drawLines() {
 
   if (!document.getElementById('game-screen').classList.contains('active')) return;
 
+  // When a node is hovered, keep its incident lines bright and dim the rest to 25% for legibility.
+  const hovering = _hover.name !== null;
   for (const conn of connections) {
     const fNode = document.querySelector(`.opt-node[data-type="${conn.from.type}"][data-name="${conn.from.name}"]`);
     const tNode = document.querySelector(`.opt-node[data-type="${conn.to.type}"][data-name="${conn.to.name}"]`);
     if (!fNode || !tNode) continue;
+    const incident = (conn.from.type === _hover.type && conn.from.name === _hover.name) ||
+                     (conn.to.type === _hover.type && conn.to.name === _hover.name);
+    const alpha = (hovering && !incident) ? 0.25 : 0.75;
     const fr = fNode.getBoundingClientRect(), tr = tNode.getBoundingClientRect();
     drawBezier(ctx, fr.left + fr.width / 2, fr.top + fr.height / 2,
                     tr.left + tr.width / 2, tr.top + tr.height / 2,
-                    'rgba(136,204,255,0.75)', 2);
+                    `rgba(136,204,255,${alpha})`, 2);
   }
 
   if (_drag.active && _drag.fromEl) {
