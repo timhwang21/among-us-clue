@@ -49,8 +49,10 @@ export function buildClues(answer, victim, personalities) {
       coreFacts.push(witness(witnessSpeaker, 'suspect', answer.suspect));
     }
 
-    // Always debunk the killer's fake alibi via a proven innocent.
-    const negationSpeaker = rand(provenInnocents);
+    // Prefer innocents with a known room (appears as vouch target) so the killer can counter-deny.
+    const vouchedInnocents = provenInnocents.filter(p => edges.some(e => e.to.name === p.name));
+    const negationSpeaker = rand(vouchedInnocents.length ? vouchedInnocents : provenInnocents);
+    const negSpeakerRoom = edges.find(e => e.to.name === negationSpeaker.name)?.room;
     coreFacts.push(negation(negationSpeaker, answer.suspect, killerFakeRoom));
 
     coreFacts.push(roomCorr(corrSpeaker, answer.room));
@@ -67,11 +69,20 @@ export function buildClues(answer, victim, personalities) {
     // Render deductive facts into clues.
     const deductiveClues = coreFacts.flatMap(f => factToClue(f, answer));
 
-    // Killer's false alibi clue (decorative, not deductive).
+    // Killer's false alibi + deflect. If the negation speaker's room is known, the killer also
+    // counter-denies that innocent's alibi — forcing players to resolve the 2v1 corroboration.
     const decorative = [
       { speaker: answer.suspect, text: rand(TMPL.killerLie)(killerFakeRoom.name), deductive: false },
       { speaker: answer.suspect, text: rand(TMPL.killerDeflect)(rand(innocents).name), accusation: true, deductive: false },
     ];
+    if (negSpeakerRoom) {
+      decorative.push({
+        speaker: answer.suspect,
+        text: rand(TMPL.killerDenyRoom)(negationSpeaker.name, negSpeakerRoom.name),
+        accusation: true,
+        deductive: false,
+      });
+    }
 
     const noiseClues = buildNoise({ innocents, answer, victim, nonMurderRooms, personalities });
 

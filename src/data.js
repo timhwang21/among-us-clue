@@ -244,6 +244,13 @@ export const TMPL = {
     n => `"${n} kept checking over their shoulder when I walked past. Strange."`,
     n => `"${n} seemed distracted and on edge before the alarm. Probably nothing."`,
   ],
+  killerDenyRoom: [
+    (n, r) => `"${n} wasn't in ${r}. I was in the area — I would have noticed."`,
+    (n, r) => `"${n} claims ${r}? I went through there that shift. They weren't around."`,
+    (n, r) => `"${n} was NOT in ${r}. I can say that with confidence."`,
+    (n, r) => `"Don't trust ${n} about ${r}. I was nearby. They weren't there."`,
+    (n, r) => `"${n} is lying about ${r}. I would have seen them if they were actually there."`,
+  ],
   killerDeflect: [
     n => `"Why is everyone looking at me?? Look at ${n}! They were acting so suspicious before all this!"`,
     n => `"Honestly? I think ${n} did it. I saw them near where it happened right before the alarm went off."`,
