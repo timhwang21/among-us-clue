@@ -44,6 +44,9 @@ function solve(facts) {
       }
 
       if (f.type === TYPE.ROOM_CORR && !crimeRoom) {
+        // Only trust the room corroboration once its speaker is proven innocent (same gate as
+        // WITNESS/NEGATION/WEAPON_ELIM) — the killer could falsely corroborate a wrong room.
+        if (f.speaker && !innocents.has(f.speaker.name)) continue;
         crimeRoom = f.room.name; firedFacts.add(f); changed = true;
       }
 
@@ -144,7 +147,10 @@ function candidateConsistent(facts, { suspect, room, weapon }) {
       if (f.speaker.name === suspect.name) return false; // speaker must be innocent
       if (f.killer.name !== suspect.name) return false;  // names a specific killer
     }
-    if (f.type === TYPE.ROOM_CORR && f.room.name !== room.name) return false;
+    if (f.type === TYPE.ROOM_CORR) {
+      if (f.speaker && !provenInnocent.has(f.speaker.name)) continue;
+      if (f.room.name !== room.name) return false;
+    }
     if (f.type === TYPE.WEAPON_HINT && f.weapon.name !== weapon.name) return false;
   }
   return true;
