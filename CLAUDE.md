@@ -97,6 +97,4 @@ Three screens toggled by `showScreen(name)`: `title`, `game`, `result`. The titl
 
 ## Changelog
 
-Maintain `CHANGELOG.md` at the repo root. Update it whenever you implement player-facing features (new gameplay mechanics, UX improvements, visual changes, new content). Do not add entries for refactors, test changes, internal architecture changes, or anything not visible to players.
-
-Format: newest entry at the top, date header `## YYYY-MM-DD`, brief bullet points describing what the player experiences.
+The changelog lives in the `#changelog-dialog` section of `index.html` (around line 582). Update it whenever you implement player-facing features. Newest entry at the top; each entry is a `<div class="changelog-entry">` with a date and `<ul>` of bullets describing what the player experiences. Do not add entries for refactors, test changes, or internal architecture changes.
