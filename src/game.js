@@ -33,13 +33,6 @@ export function buildClues(answer, victim, personalities) {
     // Determine proven innocents from the vouch edges (to pick speakers for corroboration).
     const provenInnocents = getProvenInnocents(edges, innocents);
 
-    // Assign non-murder weapons to proven innocents (cyclic; some innocents get 2).
-    const shuffledNMW = shuffle(nonMurderWeapons.slice());
-    const weaponAssignments = new Map(provenInnocents.map(p => [p.name, []]));
-    shuffledNMW.forEach((w, i) =>
-      weaponAssignments.get(provenInnocents[i % provenInnocents.length].name).push(w)
-    );
-
     // Build the minimal deductive fact set.
     const [corrSpeaker] = shuffle(provenInnocents.slice());
     const coreFacts = [...edges];
@@ -68,11 +61,20 @@ export function buildClues(answer, victim, personalities) {
 
     coreFacts.push(roomCorr(corrSpeaker, answer.room));
 
-    // Each proven innocent accounts for their assigned weapons; murder weapon identified by elimination.
-    for (const [innocentName, weapons] of weaponAssignments) {
-      const innocent = provenInnocents.find(p => p.name === innocentName);
-      for (const w of weapons) coreFacts.push(weaponElim(innocent, w));
-    }
+    // Eliminate every non-murder weapon so the murder weapon stands alone. Spread the clues over
+    // only 2–3 of the proven innocents (never all four), so the killer isn't the lone suspect with
+    // no weapon clue — at least one innocent is silent too, making "silent on weapons" ambiguous.
+    // Each clue is a possession ("I had it") or observation ("saw it in storage") flavor, capped so
+    // a game is never all one flavor. Flavor is cosmetic; both eliminate identically in the solver.
+    const shuffledNMW    = shuffle(nonMurderWeapons.slice());
+    const speakerCount   = Math.min(provenInnocents.length, 2 + Math.round(Math.random()));
+    const weaponSpeakers = shuffle(provenInnocents.slice()).slice(0, speakerCount);
+    const flavors        = shuffledNMW.map(() => (Math.random() < 0.5 ? 'possession' : 'observation'));
+    if (flavors.every(f => f === flavors[0]))
+      flavors[0] = flavors[0] === 'possession' ? 'observation' : 'possession';
+    shuffledNMW.forEach((w, i) =>
+      coreFacts.push(weaponElim(weaponSpeakers[i % weaponSpeakers.length], w, flavors[i]))
+    );
 
     const err = verify(coreFacts, answer);
     if (err) continue;

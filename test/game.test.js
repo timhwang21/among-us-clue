@@ -98,6 +98,38 @@ describe('createGame', () => {
     expect(typeof trustChain.structure).toBe('string');
   });
 
+  // Regression: weapon-elimination clues must not come from every innocent. If all four innocents
+  // each account for a weapon, the killer is the lone suspect with no weapon clue — a tell that
+  // shortcuts the intended deduction. Clues are spread over at most 3 innocents, so "silent on
+  // weapons" always covers ≥2 suspects (an innocent + the killer).
+  it('weapon clues never come from all four innocents (no silent-suspect tell)', () => {
+    const weaponNames = WEAPONS.map(w => w.name);
+    for (let i = 0; i < 300; i++) {
+      const { clues, trustChain } = createGame();
+      const speakers = new Set(
+        clues
+          .filter(c => c.deductive && weaponNames.some(n => c.text.includes(n)))
+          .map(c => c.speaker.name)
+      );
+      const innocentsWithWeaponClue = trustChain.innocents.filter(s => speakers.has(s.name)).length;
+      expect(innocentsWithWeaponClue).toBeLessThanOrEqual(3);
+    }
+  });
+
+  // Regression: the five weapon-elimination clues mix possession ("I had it") and observation
+  // ("saw it in storage") flavors — a game is never all one flavor.
+  it('weapon clues are never all one flavor', () => {
+    const weaponNames = WEAPONS.map(w => w.name);
+    const observation = /in storage|supply rack|cabinet|equipment locker/;
+    for (let i = 0; i < 300; i++) {
+      const { clues } = createGame();
+      const weaponClues = clues.filter(c => c.deductive && weaponNames.some(n => c.text.includes(n)));
+      const seen = weaponClues.filter(c => observation.test(c.text)).length;
+      expect(seen).toBeGreaterThan(0);
+      expect(seen).toBeLessThan(weaponClues.length);
+    }
+  });
+
   it('guardian angel base clue has no helpful keywords', () => {
     const { victim, answer, clues } = createGame();
     const ghostClue = clues.find(c => c.speaker.name === victim.name && c.dead === true);

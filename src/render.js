@@ -37,7 +37,7 @@ export function factToClue(fact, answer) {
       return [{ speaker: fact.speaker, text: rand(TMPL.weaponHint)(answer.weapon.name), deductive: true }];
 
     case TYPE.WEAPON_ELIM:
-      return [{ speaker: fact.speaker, text: rand(TMPL.weaponElim)(fact.weapon.name), deductive: true }];
+      return [{ speaker: fact.speaker, text: rand(fact.flavor === 'observation' ? TMPL.weaponSeen : TMPL.weaponElim)(fact.weapon.name), deductive: true }];
 
     default:
       return [];

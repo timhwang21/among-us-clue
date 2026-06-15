@@ -204,6 +204,13 @@ export const TMPL = {
     w => `"I was using the ${w} for a task. I can personally account for it."`,
     w => `"The ${w} is fine — I had it all shift for assigned maintenance."`,
   ],
+  weaponSeen: [
+    w => `"The ${w} is right where it belongs — I saw it in storage after the alarm."`,
+    w => `"I spotted the ${w} back in the supply rack during my rounds. It never moved."`,
+    w => `"The ${w}? Still in its place in the cabinet. I walked past it, no question."`,
+    w => `"Saw the ${w} sitting in storage, untouched. That's not the one we're after."`,
+    w => `"The ${w} was in the equipment locker the whole time. I checked it myself."`,
+  ],
   weaponCorr: [
     (w, r) => `"I noticed a ${w} near ${r} earlier. I don't remember it being there before."`,
     (w, r) => `"There was a ${w} on the floor near ${r}. I just walked past it — didn't think much of it."`,

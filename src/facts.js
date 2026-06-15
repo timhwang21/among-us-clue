@@ -16,7 +16,9 @@ export const killerLie   = (room)                   => ({ type: TYPE.KILLER_LIE,
 export const witness     = (speaker, kind, value)   => ({ type: TYPE.WITNESS,     speaker, kind, value });
 export const roomCorr    = (speaker, room)           => ({ type: TYPE.ROOM_CORR,   speaker, room });
 export const weaponHint  = (speaker, weapon)         => ({ type: TYPE.WEAPON_HINT, speaker, weapon });
-export const weaponElim  = (speaker, weapon)           => ({ type: TYPE.WEAPON_ELIM, speaker, weapon });
+// flavor is render-only ('possession' = "I had it"; 'observation' = "saw it in storage"); the
+// solver treats both identically. Mixing flavors is purely cosmetic variance.
+export const weaponElim  = (speaker, weapon, flavor = 'possession') => ({ type: TYPE.WEAPON_ELIM, speaker, weapon, flavor });
 // negation: speaker (innocent) says `killer` was NOT in `fakeRoom`, contradicting the killer's lie.
 // The speaker must be proven innocent before it fires (same deductive power as witness kind='suspect',
 // but rendered with killerContradict flavor instead of a direct accusation).
