@@ -18,9 +18,10 @@ export function factToClue(fact, answer) {
       ];
 
     case TYPE.WITNESS:
-      // kind='suspect' directly names the killer (lone-wolf strategy only).
+      // kind='suspect' is a direct sighting that names the killer outright (lone-wolf's sole
+      // path to killer identity) — it must read as an accusation, not soft weapon/room flavor.
       if (fact.kind === 'suspect')
-        return [{ speaker: fact.speaker, text: rand(TMPL.witnessWeapon)(answer.suspect.name, answer.weapon.name), deductive: true }];
+        return [{ speaker: fact.speaker, text: rand(TMPL.witnessSuspect)(answer.suspect.name), accusation: true, deductive: true }];
       if (fact.kind === 'weapon')
         return [{ speaker: fact.speaker, text: rand(TMPL.witnessWeapon)(answer.suspect.name, answer.weapon.name), deductive: true }];
       return [{ speaker: fact.speaker, text: rand(TMPL.witnessRoom)(answer.suspect.name, answer.room.name), deductive: true }];

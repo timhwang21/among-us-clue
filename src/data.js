@@ -260,6 +260,13 @@ export const TMPL = {
     n => `"Has anyone else noticed ${n} being weird? Because I have. Just saying."`,
     n => `"I think we're looking at the wrong person. ${n} was near the scene. Why isn't anyone asking them?"`,
   ],
+  witnessSuspect: [
+    k => `"It was ${k}. I saw them do it — I just didn't want to be the one to say it."`,
+    k => `"I watched ${k} slip away from the scene right after it happened. It was ${k}, I'm certain."`,
+    k => `"${k} is the impostor. I saw the whole thing with my own eyes."`,
+    k => `"Stop looking at everyone else — it was ${k}. I caught them in the act."`,
+    k => `"There's no doubt in my mind: ${k} did it. I saw them at the scene."`,
+  ],
   witnessWeapon: [
     (k, w) => `"I saw ${k} carrying the ${w}. It was right before everything happened."`,
     (k, w) => `"${k} had the ${w} earlier. I didn't think much of it — now I do."`,

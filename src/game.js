@@ -52,8 +52,10 @@ export function buildClues(answer, victim, personalities) {
     }
 
     // Negation: a proven innocent contradicts the killer's fake alibi. Only included in ~25% of
-    // games (for variety); strategies that can't be solved without it always get it.
-    const includeNegation = wantNegation || strategy.requiresNegation;
+    // games (for variety); strategies that can't be solved without it always get it. Excluded for
+    // lone-wolf — its witness already names the killer, so a negation would make the witness
+    // redundant and fail the minimality check (silently dropping all lone-wolf games).
+    const includeNegation = (wantNegation && strategy.id !== 'lone-wolf') || strategy.requiresNegation;
     let negationSpeaker = null;
     let negSpeakerRoom  = null;
     if (includeNegation) {
